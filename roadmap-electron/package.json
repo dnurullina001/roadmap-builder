@@ -1,7 +1,7 @@
 {
-  "name": "roadmap-builder-desktop",
+  "name": "vektor-desktop",
   "version": "1.0.0",
-  "description": "Roadmap Builder — desktop app for Windows",
+  "description": "Вектор — инструмент для создания дорожных карт",
   "author": "dnurullina001",
   "repository": {
     "type": "git",
@@ -14,14 +14,15 @@
     "dist-portable": "electron-builder --win portable --x64"
   },
   "build": {
-    "appId": "com.roadmapbuilder.app",
-    "productName": "Roadmap Builder",
+    "appId": "com.vektor.roadmap",
+    "productName": "Вектор",
     "directories": {
       "output": "dist-electron"
     },
     "files": [
       "main.js",
       "preload.js",
+      "build/**",
       "!node_modules/**",
       "!dist-electron/**"
     ],
@@ -35,17 +36,18 @@
     "win": {
       "target": [
         { "target": "nsis", "arch": ["x64"] }
-      ]
+      ],
+      "icon": "build/icon.png"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Roadmap Builder"
+      "shortcutName": "Вектор"
     },
     "portable": {
-      "artifactName": "RoadmapBuilder-portable.exe"
+      "artifactName": "Vektor-portable.exe"
     },
     "compression": "maximum",
     "asar": true
