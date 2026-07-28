@@ -1,0 +1,130 @@
+npm run dist
+  npm run dist
+  shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+  env:
+    GH_TOKEN: ***
+    CSC_IDENTITY_AUTO_DISCOVERY: false
+
+> vektor-desktop@1.0.0 dist
+> electron-builder --win --x64
+
+  • electron-builder  version=24.13.3 os=10.0.26100
+  • artifacts will be published if draft release exists  reason=CI detected
+  • loaded configuration  file=package.json ("build" field)
+  • packaging       platform=win32 arch=x64 electron=31.7.7 appOutDir=dist-electron\win-unpacked
+  • downloading     url=https://github.com/electron/electron/releases/download/v31.7.7/electron-v31.7.7-win32-x64.zip size=111 MB parts=8
+  • downloaded      url=https://github.com/electron/electron/releases/download/v31.7.7/electron-v31.7.7-win32-x64.zip duration=384ms
+  • asar usage is disabled — this is strongly not recommended  solution=enable asar and use asarUnpack to unpack files that must be externally available
+  • asar usage is disabled — this is strongly not recommended  solution=enable asar and use asarUnpack to unpack files that must be externally available
+  • downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z size=5.6 MB parts=1
+  • downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z duration=189ms
+  • building        target=zip arch=x64 file=dist-electron\Вектор-1.0.0-win.zip
+  • publishing      publisher=Github (owner: dnurullina001, project: roadmap-builder, version: 1.0.0)
+  • building        target=nsis file=dist-electron\Вектор Setup 1.0.0.exe archs=x64 oneClick=false perMachine=false
+  • uploading       file=vektor-desktop-1.0.0-win.zip provider=github
+  • downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-3.0.4.1/nsis-3.0.4.1.7z size=1.3 MB parts=1
+  • downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-3.0.4.1/nsis-3.0.4.1.7z duration=176ms
+  • skipped publishing  file=vektor-desktop-1.0.0-win.zip reason=release doesn't exist and not created because "publish" is not "always" and build is not on tag tag=v1.0.0 version=1.0.0
+  • downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-resources-3.4.1/nsis-resources-3.4.1.7z size=731 kB parts=1
+  • downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-resources-3.4.1/nsis-resources-3.4.1.7z duration=151ms
+  ⨯ C:\Users\runneradmin\AppData\Local\electron-builder\Cache\nsis\nsis-3.0.4.1\Bin\makensis.exe process failed ERR_ELECTRON_BUILDER_CANNOT_EXECUTE
+Exit code:
+1
+Output:
+Command line defined: "APP_ID=com.vektor.roadmap"
+Command line defined: "APP_GUID=6c1817e9-3da2-593c-8a0a-10fea1dbdf32"
+Command line defined: "UNINSTALL_APP_KEY=6c1817e9-3da2-593c-8a0a-10fea1dbdf32"
+Command line defined: "PRODUCT_NAME=??????"
+Command line defined: "PRODUCT_FILENAME=??????"
+Command line defined: "APP_FILENAME=vektor-desktop"
+Command line defined: "APP_DESCRIPTION=?????? � ?????????? ??? ???????? ???????? ????"
+Command line defined: "VERSION=1.0.0"
+Command line defined: "PROJECT_DIR=D:\a\roadmap-builder\roadmap-builder\roadmap-electron"
+Command line defined: "BUILD_RESOURCES_DIR=D:\a\roadmap-builder\roadmap-builder\roadmap-electron\build"
+Command line defined: "APP_PACKAGE_NAME=vektor-desktop"
+Command line defined: "MUI_ICON=D:\a\roadmap-builder\roadmap-builder\roadmap-electron\build\icon.png"
+Command line defined: "MUI_UNICON=D:\a\roadmap-builder\roadmap-builder\roadmap-electron\build\icon.png"
+Command line defined: "APP_64=D:\a\roadmap-builder\roadmap-builder\roadmap-electron\dist-electron\vektor-desktop-1.0.0-x64.nsis.7z"
+Command line defined: "APP_64_NAME=vektor-desktop-1.0.0-x64.nsis.7z"
+Command line defined: "APP_64_HASH=82A46D65A1CCE62552B890DEAA173A03B3AAFCC3BAA33F8927BA938446CB9AAEC76C4B8847830565F9722C4BC9054246974C67080A015BA70B8F383544A6813F"
+Command line defined: "APP_64_UNPACKED_SIZE=265980"
+Command line defined: "COMPANY_NAME=dnurullina001"
+Command line defined: "APP_PRODUCT_FILENAME=??????"
+Command line defined: "APP_INSTALLER_STORE_FILE=vektor-desktop-updater\installer.exe"
+Command line defined: "COMPRESSION_METHOD=7z"
+Command line defined: "MULTIUSER_INSTALLMODE_ALLOW_ELEVATION"
+Command line defined: "INSTALL_MODE_PER_ALL_USERS_REQUIRED"
+Command line defined: "allowToChangeInstallationDirectory"
+Command line defined: "SHORTCUT_NAME=??????"
+Command line defined: "UNINSTALL_DISPLAY_NAME=?????? 1.0.0"
+Command line defined: "MUI_WELCOMEFINISHPAGE_BITMAP=${NSISDIR}\Contrib\Graphics\Wizard\nsis3-metro.bmp"
+Command line defined: "MUI_UNWELCOMEFINISHPAGE_BITMAP=${NSISDIR}\Contrib\Graphics\Wizard\nsis3-metro.bmp"
+Command line defined: "ESTIMATED_SIZE=265979"
+Command line defined: "COMPRESS=auto"
+Command line defined: "BUILD_UNINSTALLER"
+Command line defined: "UNINSTALLER_OUT_FILE=D:\a\roadmap-builder\roadmap-builder\roadmap-electron\dist-electron\__uninstaller-nsis-vektor-desktop.exe"
+Processing config: C:\Users\runneradmin\AppData\Local\electron-builder\Cache\nsis\nsis-3.0.4.1\nsisconf.nsh
+Processing script file: "<stdin>" (UTF8)
+
+Error output:
+Error while loading icon from "D:\a\roadmap-builder\roadmap-builder\roadmap-electron\build\icon.png": invalid icon file
+Error in macro MUI_INTERFACE on macroline 87
+Error in macro MUI_UNPAGE_INIT on macroline 7
+Error in macro MUI_UNPAGE_WELCOME on macroline 5
+!include: error in script: "assistedInstaller.nsh" on line 70
+Error in script "<stdin>" on line 110 -- aborting creation process
+  failedTask=build stackTrace=Error: C:\Users\runneradmin\AppData\Local\electron-builder\Cache\nsis\nsis-3.0.4.1\Bin\makensis.exe process failed ERR_ELECTRON_BUILDER_CANNOT_EXECUTE
+Exit code:
+1
+Output:
+Command line defined: "APP_ID=com.vektor.roadmap"
+Command line defined: "APP_GUID=6c1817e9-3da2-593c-8a0a-10fea1dbdf32"
+Command line defined: "UNINSTALL_APP_KEY=6c1817e9-3da2-593c-8a0a-10fea1dbdf32"
+Command line defined: "PRODUCT_NAME=??????"
+Command line defined: "PRODUCT_FILENAME=??????"
+Command line defined: "APP_FILENAME=vektor-desktop"
+Command line defined: "APP_DESCRIPTION=?????? � ?????????? ??? ???????? ???????? ????"
+Command line defined: "VERSION=1.0.0"
+Command line defined: "PROJECT_DIR=D:\a\roadmap-builder\roadmap-builder\roadmap-electron"
+Command line defined: "BUILD_RESOURCES_DIR=D:\a\roadmap-builder\roadmap-builder\roadmap-electron\build"
+Command line defined: "APP_PACKAGE_NAME=vektor-desktop"
+Command line defined: "MUI_ICON=D:\a\roadmap-builder\roadmap-builder\roadmap-electron\build\icon.png"
+Command line defined: "MUI_UNICON=D:\a\roadmap-builder\roadmap-builder\roadmap-electron\build\icon.png"
+Command line defined: "APP_64=D:\a\roadmap-builder\roadmap-builder\roadmap-electron\dist-electron\vektor-desktop-1.0.0-x64.nsis.7z"
+Command line defined: "APP_64_NAME=vektor-desktop-1.0.0-x64.nsis.7z"
+Command line defined: "APP_64_HASH=82A46D65A1CCE62552B890DEAA173A03B3AAFCC3BAA33F8927BA938446CB9AAEC76C4B8847830565F9722C4BC9054246974C67080A015BA70B8F383544A6813F"
+Command line defined: "APP_64_UNPACKED_SIZE=265980"
+Command line defined: "COMPANY_NAME=dnurullina001"
+Command line defined: "APP_PRODUCT_FILENAME=??????"
+Command line defined: "APP_INSTALLER_STORE_FILE=vektor-desktop-updater\installer.exe"
+Command line defined: "COMPRESSION_METHOD=7z"
+Command line defined: "MULTIUSER_INSTALLMODE_ALLOW_ELEVATION"
+Command line defined: "INSTALL_MODE_PER_ALL_USERS_REQUIRED"
+Command line defined: "allowToChangeInstallationDirectory"
+Command line defined: "SHORTCUT_NAME=??????"
+Command line defined: "UNINSTALL_DISPLAY_NAME=?????? 1.0.0"
+Command line defined: "MUI_WELCOMEFINISHPAGE_BITMAP=${NSISDIR}\Contrib\Graphics\Wizard\nsis3-metro.bmp"
+Command line defined: "MUI_UNWELCOMEFINISHPAGE_BITMAP=${NSISDIR}\Contrib\Graphics\Wizard\nsis3-metro.bmp"
+Command line defined: "ESTIMATED_SIZE=265979"
+Command line defined: "COMPRESS=auto"
+Command line defined: "BUILD_UNINSTALLER"
+Command line defined: "UNINSTALLER_OUT_FILE=D:\a\roadmap-builder\roadmap-builder\roadmap-electron\dist-electron\__uninstaller-nsis-vektor-desktop.exe"
+Processing config: C:\Users\runneradmin\AppData\Local\electron-builder\Cache\nsis\nsis-3.0.4.1\nsisconf.nsh
+Processing script file: "<stdin>" (UTF8)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            Error output:
+Error while loading icon from "D:\a\roadmap-builder\roadmap-builder\roadmap-electron\build\icon.png": invalid icon file
+Error in macro MUI_INTERFACE on macroline 87
+Error in macro MUI_UNPAGE_INIT on macroline 7
+Error in macro MUI_UNPAGE_WELCOME on macroline 5
+!include: error in script: "assistedInstaller.nsh" on line 70
+Error in script "<stdin>" on line 110 -- aborting creation process
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                at ChildProcess.<anonymous> (D:\a\roadmap-builder\roadmap-builder\roadmap-electron\node_modules\builder-util\src\util.ts:252:14)
+    at Object.onceWrapper (node:events:634:26)
+    at ChildProcess.emit (node:events:519:28)
+    at ChildProcess.cp.emit (D:\a\roadmap-builder\roadmap-builder\roadmap-electron\node_modules\cross-spawn\lib\enoent.js:34:29)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Process.ChildProcess._handle.onexit (node:internal/child_process:304:5)
+Error: Process completed with exit code 1.
+0s
+0s
+2s

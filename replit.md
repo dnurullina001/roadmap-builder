@@ -1,45 +1,52 @@
-# [Project name]
+# Вектор — Roadmap Builder
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Инструмент для создания корпоративных дорожных карт с экспортом в PPTX и сборкой Windows EXE через GitHub Actions.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/roadmap-builder run dev` — запустить веб-приложение
+- `pnpm --filter @workspace/roadmap-builder run build` — собрать продакшн-бандл
+- `pnpm run typecheck` — проверка типов по всем пакетам
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- pnpm workspaces, Node.js 22, TypeScript
+- Frontend: React + Vite + Tailwind CSS + shadcn/ui
+- Export: pptxgenjs (PPTX), window.print() (PDF)
+- Desktop: Electron 31 + electron-builder 24 → Windows NSIS installer + ZIP
+- Data: localStorage (no server)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/roadmap-builder/` — веб-приложение (React/Vite)
+- `artifacts/roadmap-builder/src/lib/export-pptx.ts` — логика PPTX-экспорта
+- `artifacts/roadmap-builder/src/lib/demo-data.ts` — демо-данные на русском
+- `artifacts/roadmap-builder/src/lib/status.ts` — статусы и исполнители
+- `roadmap-electron/` — Electron-обёртка для Windows EXE
+- `roadmap-electron/main.js` — точка входа Electron
+- `roadmap-electron/build/icon.png` — исходная иконка (CI конвертирует в .ico)
+- `.github/workflows/build-exe.yml` — CI: Linux→веб, Windows→EXE→Releases
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
+- `BASE_PATH=./` в Vite-сборке — Electron загружает через `file://`, абсолютные пути `/assets/...` не работают
+- `asar: false` в electron-builder — `__dirname` указывает на реальный путь на диске
+- Веб-файлы копируются в `roadmap-electron/app-dist/` до сборки (не через `extraResources`)
+- CI конвертирует `icon.png → icon.ico` через ImageMagick (`magick` pre-installed on windows-latest)
+- `productName` и `shortcutName` — ASCII-only ("Vektor"), русское название только в window title Electron
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Язык интерфейса: русский
+- Корпоративная палитра: primary `#0048F4`, navy `#44546A`, amber `#FFC000`
+- Никаких внешних трекеров и аналитики
+- Все данные только локально — ничего не отправляется на серверы
+- GitHub: https://github.com/dnurullina001/
+- Токены только через GitHub Secrets, не в коде; после пуша URL очищается
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- NSIS не принимает PNG-иконки — нужен .ico. CI конвертирует через ImageMagick
+- Кириллица в `productName` ломает NSIS (показывает `??????`) — только ASCII
+- `extraResources` ненадёжен в electron-builder 24 — лучше копировать файлы в папку проекта и включать в `files[]`
+- Токен GitHub должен быть удалён из remote URL после пуша (безопасность)
