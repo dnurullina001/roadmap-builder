@@ -8,10 +8,18 @@ import { Scene5 } from "./video_scenes/Scene5";
 import { Scene6 } from "./video_scenes/Scene6";
 import { Scene7 } from "./video_scenes/Scene7";
 
-const SCENE_DURATIONS = [4500, 7000, 6000, 5500, 5000, 6000, 5000];
+const SCENE_DURATIONS = {
+  intro: 4500,
+  streams: 7000,
+  stages: 6000,
+  editing: 5500,
+  versions: 5000,
+  export: 6000,
+  outro: 5000,
+};
 
 export function VideoTemplate() {
-  const { currentScene } = useVideoPlayer(SCENE_DURATIONS);
+  const { currentScene } = useVideoPlayer({ durations: SCENE_DURATIONS });
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#F8F9FA]">

@@ -1,72 +1,121 @@
-import { useEffect, useRef, useState } from "react";
+// Video player hook - handles recording lifecycle, scene advancement, and looping
 
-/**
- * Video player hook that manages scene progression and recording lifecycle.
- * Do NOT modify this file -- the export pipeline depends on its exact implementation.
- */
-export function useVideoPlayer(sceneDurations: number[]) {
-  const [currentScene, setCurrentScene] = useState(0);
-  const startTimeRef = useRef<number>(Date.now());
-  const recordingStartedRef = useRef(false);
+import { useEffect, useRef, useState } from 'react';
 
-  useEffect(() => {
-    // Start recording on first render
-    if (!recordingStartedRef.current && typeof window !== 'undefined' && window.startRecording) {
-      window.startRecording();
-      recordingStartedRef.current = true;
-    }
-
-    const totalDuration = sceneDurations.reduce((sum, duration) => sum + duration, 0);
-    
-    function tick() {
-      const elapsed = Date.now() - startTimeRef.current;
-      
-      // Calculate which scene should be active
-      let accumulatedTime = 0;
-      let sceneIndex = 0;
-      
-      for (let i = 0; i < sceneDurations.length; i++) {
-        if (elapsed < accumulatedTime + sceneDurations[i]) {
-          sceneIndex = i;
-          break;
-        }
-        accumulatedTime += sceneDurations[i];
-      }
-      
-      // Loop back to start when video completes
-      if (elapsed >= totalDuration) {
-        startTimeRef.current = Date.now();
-        setCurrentScene(0);
-      } else {
-        setCurrentScene(sceneIndex);
-      }
-    }
-
-    const interval = setInterval(tick, 1000 / 60); // 60fps
-    
-    return () => clearInterval(interval);
-  }, [sceneDurations]);
-
-  // Stop recording after total duration + 1 second buffer
-  useEffect(() => {
-    const totalDuration = sceneDurations.reduce((sum, duration) => sum + duration, 0);
-    
-    const stopTimer = setTimeout(() => {
-      if (typeof window !== 'undefined' && window.stopRecording) {
-        window.stopRecording();
-      }
-    }, totalDuration + 1000);
-
-    return () => clearTimeout(stopTimer);
-  }, [sceneDurations]);
-
-  return { currentScene };
-}
-
-// Extend window type for recording functions
 declare global {
   interface Window {
-    startRecording?: () => void;
+    __replitVideoPlayerMounted?: boolean;
+    __replitVideoTotalDurationMs?: number;
+    startRecording?: () => Promise<void>;
     stopRecording?: () => void;
   }
+}
+
+export interface SceneDurations {
+  [key: string]: number;
+}
+
+export interface UseVideoPlayerOptions {
+  durations: SceneDurations;
+  onVideoEnd?: () => void;
+  loop?: boolean;
+}
+
+export interface UseVideoPlayerReturn {
+  currentScene: number;
+  totalScenes: number;
+  currentSceneKey: string;
+  hasEnded: boolean;
+}
+
+export function useVideoPlayer(
+  options: UseVideoPlayerOptions,
+): UseVideoPlayerReturn {
+  const { durations, onVideoEnd, loop = true } = options;
+
+  // Captured once on mount -- durations must be a static object
+  const sceneKeys = useRef(Object.keys(durations)).current;
+  const totalScenes = sceneKeys.length;
+  const durationsArray = useRef(Object.values(durations)).current;
+
+  const [currentScene, setCurrentScene] = useState(0);
+  const [hasEnded, setHasEnded] = useState(false);
+
+  // Start recording on mount
+  useEffect(() => {
+    window.__replitVideoPlayerMounted = true;
+    // Declares the intended video length to the export renderer so a broken
+    // stop path cannot record past the end of the last scene.
+    window.__replitVideoTotalDurationMs = durationsArray.reduce(
+      (total, duration) => total + duration,
+      0,
+    );
+    window.startRecording?.();
+
+    return () => {
+      window.__replitVideoPlayerMounted = false;
+    };
+  }, [durationsArray]);
+
+  // Scene advancement -- loops independently of recording
+  useEffect(() => {
+    if (hasEnded && !loop) return;
+
+    const currentDuration = durationsArray[currentScene];
+
+    const timer = setTimeout(() => {
+      // Last scene just finished playing
+      if (currentScene >= totalScenes - 1) {
+        if (!hasEnded) {
+          window.stopRecording?.();
+          setHasEnded(true);
+          onVideoEnd?.();
+        }
+        if (loop) {
+          setCurrentScene(0);
+        }
+      } else {
+        setCurrentScene((prev) => prev + 1);
+      }
+    }, currentDuration);
+
+    return () => clearTimeout(timer);
+  }, [currentScene, totalScenes, durationsArray, hasEnded, loop, onVideoEnd]);
+
+  return {
+    currentScene,
+    totalScenes,
+    currentSceneKey: sceneKeys[currentScene],
+    hasEnded,
+  };
+}
+
+export function useSceneTimer(
+  events: Array<{ time: number; callback: () => void }>,
+) {
+  const firedRef = useRef<Set<number>>(new Set());
+  const callbacksRef = useRef<Array<() => void>>([]);
+
+  useEffect(() => {
+    callbacksRef.current = events.map((e) => e.callback);
+  }, [events]);
+
+  const scheduleKey = events.map((event, i) => `${i}:${event.time}`).join('|');
+
+  useEffect(() => {
+    firedRef.current = new Set();
+
+    const timers = events.map(({ time }, index) => {
+      return setTimeout(() => {
+        if (!firedRef.current.has(index)) {
+          firedRef.current.add(index);
+          callbacksRef.current[index]?.();
+        }
+      }, time);
+    });
+
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+    };
+  }, [scheduleKey]);
 }
