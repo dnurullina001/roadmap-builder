@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Plus, Trash2, ChevronDown, RotateCcw, Download, Presentation, FolderOpen, Save } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, RotateCcw, Download, Presentation, FolderOpen, Save, HelpCircle, Eye, EyeOff, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
@@ -16,6 +16,7 @@ interface RoadmapFormProps {
   phaseData: PhaseRoadmapData;
   implementationData: ImplementationRoadmapData;
   currentProjectId: string | null;
+  hiddenModes: RoadmapMode[];
   onModeChange: (mode: RoadmapMode) => void;
   onPhaseDataChange: (data: PhaseRoadmapData) => void;
   onImplementationDataChange: (data: ImplementationRoadmapData) => void;
@@ -24,6 +25,8 @@ interface RoadmapFormProps {
   onExportPptx: () => void;
   onOpenProjects: () => void;
   onQuickSave: () => void;
+  onShowHelp: () => void;
+  onToggleHideMode: (mode: RoadmapMode) => void;
 }
 
 const StatusToggle = ({ value, onChange }: { value: ItemStatus; onChange: (status: ItemStatus) => void }) => {
@@ -99,6 +102,7 @@ export default function RoadmapForm({
   phaseData,
   implementationData,
   currentProjectId,
+  hiddenModes,
   onModeChange,
   onPhaseDataChange,
   onImplementationDataChange,
@@ -107,6 +111,8 @@ export default function RoadmapForm({
   onExportPptx,
   onOpenProjects,
   onQuickSave,
+  onShowHelp,
+  onToggleHideMode,
 }: RoadmapFormProps) {
   const [openPhases, setOpenPhases] = useState<Record<string, boolean>>(
     () => Object.fromEntries(phaseData.phases.map(p => [p.id, false]))
@@ -259,6 +265,15 @@ export default function RoadmapForm({
             >
               <Save className="w-3 h-3" />
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onShowHelp}
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-[#0048F4]"
+              title="Инструкция"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
@@ -275,13 +290,68 @@ export default function RoadmapForm({
           </Button>
         </div>
 
-        {/* Tabs — По потокам first */}
-        <Tabs value={mode} onValueChange={(v) => onModeChange(v as RoadmapMode)}>
-          <TabsList className="w-full grid grid-cols-2 h-8 bg-muted">
-            <TabsTrigger value="implementation" className="text-[11px] font-medium">По потокам</TabsTrigger>
-            <TabsTrigger value="phase" className="text-[11px] font-medium">По этапам</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Tabs — По потокам first, with per-tab hide (×) buttons */}
+        {(() => {
+          const allModes: { value: RoadmapMode; label: string }[] = [
+            { value: 'implementation', label: 'По потокам' },
+            { value: 'phase', label: 'По этапам' },
+          ];
+          const visibleModes = allModes.filter((m) => !hiddenModes.includes(m.value));
+          const hasHidden = hiddenModes.length > 0;
+
+          return (
+            <div className="space-y-1">
+              {visibleModes.length > 1 ? (
+                <Tabs value={mode} onValueChange={(v) => onModeChange(v as RoadmapMode)}>
+                  <TabsList className="w-full h-8 bg-muted flex gap-0 p-0.5">
+                    {visibleModes.map(({ value, label }) => (
+                      <div key={value} className="relative flex-1 h-full flex items-center">
+                        <TabsTrigger
+                          value={value}
+                          className="flex-1 h-full text-[11px] font-medium pr-5"
+                        >
+                          {label}
+                        </TabsTrigger>
+                        <button
+                          className="absolute right-0.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors z-10"
+                          onClick={(e) => { e.stopPropagation(); onToggleHideMode(value); }}
+                          title={`Скрыть вид «${label}»`}
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              ) : (
+                <div className="flex items-center justify-between bg-muted rounded-md px-3 h-8">
+                  <span className="text-[11px] font-semibold text-foreground">
+                    {visibleModes[0]?.label ?? ''}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] text-muted-foreground">один вид</span>
+                    <button
+                      className="p-0.5 rounded hover:bg-muted-foreground/20 text-muted-foreground"
+                      onClick={() => onToggleHideMode(hiddenModes[0]!)}
+                      title="Показать второй вид"
+                    >
+                      <EyeOff className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {hasHidden && visibleModes.length === 1 && (
+                <button
+                  className="w-full text-[9px] text-[#0048F4] hover:underline text-center py-0.5"
+                  onClick={() => onToggleHideMode(hiddenModes[0]!)}
+                >
+                  + Показать «{allModes.find(m => m.value === hiddenModes[0])?.label}»
+                </button>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Form Content */}

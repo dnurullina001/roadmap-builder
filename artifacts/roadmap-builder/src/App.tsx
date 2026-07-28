@@ -4,12 +4,14 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import RoadmapBuilder from '@/pages/RoadmapBuilder';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
+import { VideoTemplate } from '@/components/video/VideoTemplate';
 
 const queryClient = new QueryClient();
 
 function Router() {
   return (
     <Switch>
+      <Route path="/video" component={VideoTemplate} />
       <Route path="/" component={RoadmapBuilder} />
       <Route component={NotFound} />
     </Switch>

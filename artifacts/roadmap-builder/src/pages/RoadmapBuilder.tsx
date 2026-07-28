@@ -6,8 +6,9 @@ import PhaseRoadmap from '@/components/roadmap/PhaseRoadmap';
 import ImplementationRoadmap from '@/components/roadmap/ImplementationRoadmap';
 import ProjectsModal from '@/components/ProjectsModal';
 import SlideCountDialog from '@/components/SlideCountDialog';
+import HelpDialog from '@/components/HelpDialog';
 import { exportPhaseRoadmapToPptx, exportImplementationRoadmapToPptx } from '@/lib/export-pptx';
-import { SavedProject, saveNewVersion, createProject } from '@/lib/projects';
+import { SavedProject, saveNewVersion } from '@/lib/projects';
 
 const STORAGE_KEY = 'roadmap-builder-state';
 const ACTIVE_PROJECT_KEY = 'vektor-active-project';
@@ -41,6 +42,8 @@ export default function RoadmapBuilder() {
   });
   const [showProjects, setShowProjects] = useState(false);
   const [showSlideDialog, setShowSlideDialog] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [hiddenModes, setHiddenModes] = useState<RoadmapMode[]>([]);
 
   useEffect(() => {
     saveState(state);
@@ -82,6 +85,20 @@ export default function RoadmapBuilder() {
 
   // Quick-save: save current state as new version of active project,
   // or prompt to create a new one if none is active
+  const handleToggleHideMode = (mode: RoadmapMode) => {
+    if (hiddenModes.includes(mode)) {
+      // Restore
+      setHiddenModes(hiddenModes.filter((m) => m !== mode));
+    } else {
+      // Hide — if it's the currently active mode, switch to the other
+      const other: RoadmapMode = mode === 'phase' ? 'implementation' : 'phase';
+      if (state.mode === mode) {
+        setState({ ...state, mode: other });
+      }
+      setHiddenModes([...hiddenModes, mode]);
+    }
+  };
+
   const handleQuickSave = () => {
     if (currentProjectId) {
       const updated = saveNewVersion(currentProjectId, state);
@@ -127,6 +144,9 @@ export default function RoadmapBuilder() {
           onExportPptx={handleExportPptx}
           onOpenProjects={() => setShowProjects(true)}
           onQuickSave={handleQuickSave}
+          onShowHelp={() => setShowHelp(true)}
+          hiddenModes={hiddenModes}
+          onToggleHideMode={handleToggleHideMode}
         />
       </div>
 
@@ -177,6 +197,9 @@ export default function RoadmapBuilder() {
         onConfirm={handleSlideCountConfirm}
         onCancel={() => setShowSlideDialog(false)}
       />
+
+      {/* Help dialog */}
+      <HelpDialog open={showHelp} onClose={() => setShowHelp(false)} />
     </div>
   );
 }

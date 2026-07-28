@@ -119,10 +119,10 @@ export default function PhaseRoadmap({ data }: PhaseRoadmapProps) {
                                     {isStart && (
                                       <div className="flex flex-col gap-1.5 h-full">
                                         <div className="flex items-start gap-1.5">
-                                          <span className="font-mono opacity-70 mt-0.5 shrink-0" style={{ fontSize: '10px' }}>
+                                          <span className="font-mono opacity-70 mt-0.5 shrink-0" style={{ fontSize: '8px' }}>
                                             {phase.number}.{itemIndex + 1}
                                           </span>
-                                          <span className="leading-snug flex-1 font-medium truncate" style={{ fontSize: '10px', fontFamily: 'Arial, sans-serif' }} title={item.description}>
+                                          <span className="leading-snug flex-1 font-medium truncate" style={{ fontSize: '8px', fontFamily: 'Arial, sans-serif' }} title={item.description}>
                                             {item.description}
                                           </span>
                                           {isDelayed && (

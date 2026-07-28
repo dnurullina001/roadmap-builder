@@ -172,7 +172,7 @@ export default function ImplementationRoadmap({ data }: ImplementationRoadmapPro
                                   >
                                     <div
                                       className="font-bold truncate leading-tight flex items-center gap-1"
-                                      style={{ fontSize: '10px', fontFamily: 'Arial, sans-serif' }}
+                                      style={{ fontSize: '8px', fontFamily: 'Arial, sans-serif' }}
                                     >
                                       {task.description}
                                       {isDelayed && <span className="text-[#C62828] shrink-0">⚠</span>}
