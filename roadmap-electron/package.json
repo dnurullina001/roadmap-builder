@@ -35,15 +35,11 @@
     "win": {
       "target": [
         { "target": "nsis", "arch": ["x64"] }
-      ],
-      "icon": "icon.ico"
+      ]
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "icon.ico",
-      "uninstallerIcon": "icon.ico",
-      "installerHeaderIcon": "icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Roadmap Builder"
