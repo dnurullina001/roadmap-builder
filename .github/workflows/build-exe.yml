@@ -1,0 +1,57 @@
+name: Собрать Windows EXE
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # кнопка «Run workflow» в интерфейсе GitHub
+
+permissions:
+  contents: write      # нужно для создания Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Скачать код
+        uses: actions/checkout@v4
+
+      - name: Установить Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Установить pnpm
+        run: npm install -g pnpm
+
+      - name: Установить зависимости всего проекта
+        run: pnpm install
+
+      - name: Собрать веб-приложение
+        run: pnpm --filter @workspace/roadmap-builder run build
+        env:
+          BASE_PATH: /
+          PORT: 3000
+          NODE_ENV: production
+
+      - name: Установить зависимости Electron
+        working-directory: roadmap-electron
+        run: npm install
+
+      - name: Собрать Windows-инсталлятор (.exe)
+        working-directory: roadmap-electron
+        run: npm run dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Опубликовать в Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Roadmap Builder — последняя версия"
+          body: |
+            Скачайте файл **Roadmap Builder Setup.exe** и запустите установщик.
+            
+            После установки программа появится в меню «Пуск» и на рабочем столе.
+          files: roadmap-electron/dist-electron/*.exe
+          make_latest: true
