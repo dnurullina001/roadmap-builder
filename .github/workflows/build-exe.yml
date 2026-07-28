@@ -33,8 +33,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build web app
-        # BASE_PATH=./ — ВАЖНО: относительные пути ./assets/...
-        # чтобы Electron мог загрузить через file:// без ошибок
+        # BASE_PATH=./ → Vite генерирует относительные пути ./assets/...
+        # Electron открывает через file://, поэтому нужны ОТНОСИТЕЛЬНЫЕ пути
         run: pnpm --filter @workspace/roadmap-builder run build
         env:
           BASE_PATH: ./
@@ -67,13 +67,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          path: artifacts/roadmap-builder/dist/public
+          # Кладём прямо в roadmap-electron/app-dist/
+          # electron-builder включит эту папку в files[]
+          path: roadmap-electron/app-dist
 
       - name: Install Electron deps
         working-directory: roadmap-electron
         run: npm install
 
-      - name: Build Windows installer
+      - name: Build Windows installer + ZIP
         working-directory: roadmap-electron
         run: npm run dist
         env:
@@ -88,7 +90,9 @@ jobs:
           body: |
             ## Вектор — инструмент для дорожных карт
             
-            Скачайте **Вектор Setup 1.0.0.exe** и запустите установщик.  
-            После установки программа появится на рабочем столе и в меню «Пуск».
-          files: roadmap-electron/dist-electron/*.exe
+            **Установщик:** `Вектор Setup 1.0.0.exe` — скачайте и запустите, появится ярлык на рабочем столе.  
+            **Portable ZIP:** `Вектор-1.0.0-win.zip` — распакуйте архив, запустите `Вектор.exe` внутри.
+          files: |
+            roadmap-electron/dist-electron/*.exe
+            roadmap-electron/dist-electron/*.zip
           make_latest: true

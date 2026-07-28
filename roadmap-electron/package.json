@@ -10,12 +10,12 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win --x64",
-    "dist-portable": "electron-builder --win portable --x64"
+    "dist": "electron-builder --win --x64"
   },
   "build": {
     "appId": "com.vektor.roadmap",
     "productName": "Вектор",
+    "asar": false,
     "directories": {
       "output": "dist-electron"
     },
@@ -23,19 +23,12 @@
       "main.js",
       "preload.js",
       "build/**",
-      "!node_modules/**",
-      "!dist-electron/**"
-    ],
-    "extraResources": [
-      {
-        "from": "../artifacts/roadmap-builder/dist/public",
-        "to": "app",
-        "filter": ["**/*"]
-      }
+      "app-dist/**"
     ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "zip",  "arch": ["x64"] }
       ],
       "icon": "build/icon.png"
     },
@@ -44,13 +37,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Вектор"
+      "shortcutName": "Вектор",
+      "installerIcon": "build/icon.png"
     },
-    "portable": {
-      "artifactName": "Vektor-portable.exe"
-    },
-    "compression": "maximum",
-    "asar": true
+    "compression": "normal"
   },
   "devDependencies": {
     "electron": "^31.0.0",

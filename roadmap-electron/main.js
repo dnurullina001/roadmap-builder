@@ -19,19 +19,27 @@ function createWindow() {
     backgroundColor: '#f8f8f8',
   });
 
-  // Load the built Vite app
-  // IMPORTANT: must use loadFile so that relative asset paths (./assets/...)
-  // resolve correctly in the file:// context
-  const appPath = app.isPackaged
-    ? path.join(process.resourcesPath, 'app', 'index.html')
+  // When packaged: web files are copied into app-dist/ alongside main.js
+  // __dirname in a packaged app = the folder where the .exe unpacks Electron resources
+  // (NOT inside asar — we set asar:false, so __dirname is the real resources path)
+  const indexHtml = app.isPackaged
+    ? path.join(__dirname, 'app-dist', 'index.html')
     : path.join(__dirname, '..', 'artifacts', 'roadmap-builder', 'dist', 'public', 'index.html');
 
-  mainWindow.loadFile(appPath).catch((err) => {
+  console.log('Loading:', indexHtml);
+
+  mainWindow.loadFile(indexHtml).catch((err) => {
     console.error('Failed to load app:', err);
-    // Show error page if file not found
-    mainWindow.loadURL(`data:text/html,<h2 style="font-family:sans-serif;color:red;padding:40px">
-      Ошибка загрузки приложения.<br><small>${err.message}</small>
-    </h2>`);
+    mainWindow.loadURL(
+      'data:text/html,' +
+        encodeURIComponent(
+          `<html><body style="font-family:sans-serif;padding:40px;background:#fff">
+            <h2 style="color:#c00">Ошибка загрузки приложения</h2>
+            <p>Путь: <code>${indexHtml}</code></p>
+            <p>${err.message}</p>
+          </body></html>`
+        )
+    );
   });
 
   Menu.setApplicationMenu(null);
