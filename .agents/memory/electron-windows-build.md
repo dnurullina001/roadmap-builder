@@ -30,13 +30,26 @@ Copy web build files directly into `roadmap-electron/app-dist/` and include in `
 - package.json `files`: include `"app-dist/**"`
 - main.js: `path.join(__dirname, 'app-dist', 'index.html')` when `app.isPackaged`
 
-### 4. Vite must build with BASE_PATH=./
-Electron loads via `file://` — absolute paths like `/assets/main.js` resolve to filesystem root (missing).
-**Why:** `loadFile()` makes the working directory the folder of the HTML file; `./assets/...` resolves correctly.
-**How to apply:** In CI build step: `env: BASE_PATH: ./`
+### 4. Use app:// custom protocol — NEVER loadFile() with ES modules
+Chromium in Electron **silently blocks** `type="module"` scripts loaded via `file://` (CORS). React/Vite apps use ES modules → blank white window, zero error messages.
+**Why:** This is a Chromium security restriction on the file:// origin; it cannot be worked around with BASE_PATH tricks.
+**How to apply:**
+```js
+// Before app.whenReady():
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app', privileges: { secure: true, standard: true, supportFetchAPI: true } }
+]);
+// Inside app.whenReady():
+protocol.handle('app', (request) => {
+  const filePath = path.join(webRoot, new URL(request.url).pathname || 'index.html');
+  return net.fetch(pathToFileURL(fs.existsSync(filePath) ? filePath : indexHtml).toString());
+});
+mainWindow.loadURL('app://vektor/');
+```
+Set `BASE_PATH: /` in Vite build (absolute /assets/... paths work correctly with app://).
 
 ### 5. asar: false
-**Why:** With `asar: true`, `__dirname` inside the asar points to a virtual path; `loadFile` with relative paths breaks.
+**Why:** With `asar: true`, `__dirname` inside the asar points to a virtual path; relative paths to app-dist break.
 **How to apply:** Set `"asar": false` in electron-builder `build` config.
 
 ### 6. Two-job CI pattern
