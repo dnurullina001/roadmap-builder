@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Plus, Trash2, ChevronDown, RotateCcw, Download, Presentation } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, RotateCcw, Download, Presentation, FolderOpen, Save } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
@@ -15,12 +15,15 @@ interface RoadmapFormProps {
   mode: RoadmapMode;
   phaseData: PhaseRoadmapData;
   implementationData: ImplementationRoadmapData;
+  currentProjectId: string | null;
   onModeChange: (mode: RoadmapMode) => void;
   onPhaseDataChange: (data: PhaseRoadmapData) => void;
   onImplementationDataChange: (data: ImplementationRoadmapData) => void;
   onReset: () => void;
   onExport: () => void;
   onExportPptx: () => void;
+  onOpenProjects: () => void;
+  onQuickSave: () => void;
 }
 
 const StatusToggle = ({ value, onChange }: { value: ItemStatus; onChange: (status: ItemStatus) => void }) => {
@@ -95,12 +98,15 @@ export default function RoadmapForm({
   mode,
   phaseData,
   implementationData,
+  currentProjectId,
   onModeChange,
   onPhaseDataChange,
   onImplementationDataChange,
   onReset,
   onExport,
   onExportPptx,
+  onOpenProjects,
+  onQuickSave,
 }: RoadmapFormProps) {
   const [openPhases, setOpenPhases] = useState<Record<string, boolean>>(
     () => Object.fromEntries(phaseData.phases.map(p => [p.id, false]))
@@ -213,26 +219,67 @@ export default function RoadmapForm({
   return (
     <div className="h-full flex flex-col bg-white border-r border-border">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border bg-white shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[13px] font-bold text-foreground">Roadmap Builder</h2>
-          <div className="flex gap-1">
-            <Button variant="outline" size="sm" onClick={onReset} className="h-7 px-2 text-[10px]" title="Сбросить">
-              <RotateCcw className="w-3 h-3" />
+      <div className="px-4 pt-3 pb-2 border-b border-border bg-white shrink-0">
+        {/* Brand */}
+        <div className="flex items-center justify-between mb-1">
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span
+                className="text-[16px] font-bold tracking-tight"
+                style={{ color: '#0048F4', fontFamily: 'Times New Roman, serif' }}
+              >
+                Вектор
+              </span>
+              {currentProjectId && (
+                <span className="text-[9px] bg-[#0048F4]/10 text-[#0048F4] px-1.5 py-0.5 rounded font-medium">
+                  сохранено
+                </span>
+              )}
+            </div>
+            <p className="text-[9px] text-muted-foreground leading-none mt-0.5">
+              Стратегия. Ясность. Движение.
+            </p>
+          </div>
+          <div className="flex gap-1 items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenProjects}
+              className="h-7 px-2 text-[10px]"
+              title="Мои проекты"
+            >
+              <FolderOpen className="w-3 h-3 mr-1" /> Проекты
             </Button>
-            <Button variant="outline" size="sm" onClick={onExport} className="h-7 px-2 text-[10px]" title="Печать">
-              <Download className="w-3 h-3 mr-1" /> PDF
-            </Button>
-            <Button variant="default" size="sm" onClick={onExportPptx} className="h-7 px-2 text-[10px] bg-[#0048F4] hover:bg-[#0048F4]/90" title="Скачать PPTX">
-              <Presentation className="w-3 h-3 mr-1" /> PPTX
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onQuickSave}
+              className="h-7 px-2 text-[10px]"
+              title="Сохранить версию"
+            >
+              <Save className="w-3 h-3" />
             </Button>
           </div>
         </div>
 
+        {/* Export row */}
+        <div className="flex gap-1 mb-2 mt-2">
+          <Button variant="outline" size="sm" onClick={onReset} className="h-6 px-2 text-[9px]" title="Сбросить к демо">
+            <RotateCcw className="w-2.5 h-2.5" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={onExport} className="h-6 px-2 text-[9px] flex-1">
+            <Download className="w-2.5 h-2.5 mr-1" /> PDF
+          </Button>
+          <Button size="sm" onClick={onExportPptx} className="h-6 px-2 text-[9px] flex-1 bg-[#0048F4] hover:bg-[#0048F4]/90">
+            <Presentation className="w-2.5 h-2.5 mr-1" /> PPTX
+          </Button>
+        </div>
+
+        {/* Tabs — По потокам first */}
         <Tabs value={mode} onValueChange={(v) => onModeChange(v as RoadmapMode)}>
           <TabsList className="w-full grid grid-cols-2 h-8 bg-muted">
-            <TabsTrigger value="phase" className="text-[11px] font-medium">По этапам</TabsTrigger>
             <TabsTrigger value="implementation" className="text-[11px] font-medium">По потокам</TabsTrigger>
+            <TabsTrigger value="phase" className="text-[11px] font-medium">По этапам</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>

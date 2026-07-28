@@ -37,23 +37,29 @@ export default function ImplementationRoadmap({ data }: ImplementationRoadmapPro
         </div>
 
         <div className="p-6 flex-1 overflow-auto flex flex-col">
-          {/* Title */}
+          {/* Title — black on white with blue underline accent */}
           <div
-            className="text-white font-bold px-4 py-3 mb-6 tracking-tight border border-border"
-            style={{ backgroundColor: '#44546A', fontSize: '13px' }}
+            className="text-black font-bold px-4 py-3 mb-0 tracking-tight border border-[#DDDDDD] border-b-2 bg-white"
+            style={{
+              fontFamily: 'Times New Roman, serif',
+              fontSize: '18px',
+              borderBottomColor: '#0048F4',
+            }}
           >
             {title}
           </div>
 
-          <div className="flex-1 flex flex-col min-h-0 relative">
+          <div className="flex-1 flex flex-col min-h-0 relative mt-4">
             {/* Milestones Row */}
             <div className="relative h-16 shrink-0 z-10">
-              <div className="absolute bottom-0 w-full h-0 border-b-2" style={{ borderColor: '#0048F4', left: '14rem', width: 'calc(100% - 14rem)' }} />
+              <div
+                className="absolute bottom-0 h-0 border-b-2"
+                style={{ borderColor: '#0048F4', left: '14rem', right: 0 }}
+              />
               <div className="flex h-full pl-56">
                 {periods.map((_, idx) => {
                   const milestone = milestones.find((m) => m.periodIndex === idx);
                   const widthPercent = 100 / periods.length;
-
                   return (
                     <div
                       key={idx}
@@ -64,12 +70,15 @@ export default function ImplementationRoadmap({ data }: ImplementationRoadmapPro
                         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center">
                           <div
                             className="text-white px-2 py-1 text-[9px] font-bold tracking-wider whitespace-nowrap rounded-sm shadow-sm mb-1"
-                            style={{ backgroundColor: '#0048F4' }}
+                            style={{ backgroundColor: '#0048F4', fontFamily: 'Arial, sans-serif' }}
                           >
                             {milestone.label}
                           </div>
                           <div className="w-px h-5" style={{ backgroundColor: '#0048F4' }} />
-                          <Flag className="w-3.5 h-3.5 absolute bottom-0 -ml-[0.5px]" style={{ color: '#0048F4', fill: '#0048F4' }} />
+                          <Flag
+                            className="w-3.5 h-3.5 absolute bottom-0 -ml-[0.5px]"
+                            style={{ color: '#0048F4', fill: '#0048F4' }}
+                          />
                         </div>
                       )}
                     </div>
@@ -78,14 +87,18 @@ export default function ImplementationRoadmap({ data }: ImplementationRoadmapPro
               </div>
             </div>
 
-            {/* Grid Header (Periods) */}
+            {/* Grid Header */}
             <div className="flex border-b border-r border-border bg-[#F5F5F5] shrink-0">
-              <div className="w-56 shrink-0 border-l border-border bg-white" />
+              <div className="w-56 shrink-0 border-l border-border bg-[#44546A]" />
               {periods.map((period, idx) => (
                 <div
                   key={idx}
-                  className="py-2 text-center text-[11px] font-bold uppercase text-muted-foreground border-l border-border"
-                  style={{ width: `${100 / periods.length}%` }}
+                  className="py-2 text-center font-bold uppercase text-muted-foreground border-l border-border"
+                  style={{
+                    width: `${100 / periods.length}%`,
+                    fontSize: '11px',
+                    fontFamily: 'Arial, sans-serif',
+                  }}
                 >
                   {period}
                 </div>
@@ -98,13 +111,18 @@ export default function ImplementationRoadmap({ data }: ImplementationRoadmapPro
                 const swimlaneColor = SWIMLANE_COLORS[swimlaneIdx % SWIMLANE_COLORS.length];
                 const rows = layoutTasksIntoRows(swimlane.tasks);
                 const minRows = Math.max(rows.length, 1);
-                
+
                 return (
                   <div key={swimlane.id} className="flex border-r border-l border-border border-b last:border-b-0 group">
                     {/* Swimlane label */}
                     <div
-                      className="w-56 px-4 py-3 flex items-center font-bold text-[12px] bg-white border-r border-border shrink-0"
-                      style={{ borderLeftColor: swimlaneColor, borderLeftWidth: '4px' }}
+                      className="w-56 px-4 py-3 flex items-center font-bold bg-white border-r border-border shrink-0"
+                      style={{
+                        borderLeftColor: swimlaneColor,
+                        borderLeftWidth: '4px',
+                        fontSize: '11px',
+                        fontFamily: 'Arial, sans-serif',
+                      }}
                     >
                       {swimlane.name}
                     </div>
@@ -122,10 +140,10 @@ export default function ImplementationRoadmap({ data }: ImplementationRoadmapPro
                         ))}
                       </div>
 
-                      {/* Task Sub-rows */}
+                      {/* Task sub-rows */}
                       <div className="relative py-2 flex flex-col gap-1">
                         {rows.map((rowTasks, rowIdx) => (
-                          <div key={rowIdx} className="relative w-full" style={{ height: '38px' }}>
+                          <div key={rowIdx} className="relative w-full" style={{ height: '36px' }}>
                             {rowTasks.map((task) => {
                               const startPercent = (task.startPeriod / periods.length) * 100;
                               const widthPercent = (task.span / periods.length) * 100;
@@ -139,8 +157,8 @@ export default function ImplementationRoadmap({ data }: ImplementationRoadmapPro
                                   style={{
                                     left: `${startPercent}%`,
                                     width: `${widthPercent}%`,
-                                    height: '32px',
-                                    top: '3px'
+                                    height: '30px',
+                                    top: '3px',
                                   }}
                                 >
                                   <div
@@ -149,23 +167,26 @@ export default function ImplementationRoadmap({ data }: ImplementationRoadmapPro
                                       backgroundColor: statusStyle.bg,
                                       borderLeft: `4px solid ${statusStyle.border}`,
                                       color: statusStyle.fg,
-                                      border: isDelayed ? `1px solid ${statusStyle.border}` : undefined,
-                                      borderLeftWidth: '4px'
                                     }}
                                     title={task.description}
                                   >
-                                    <div className="font-bold text-[10px] truncate leading-tight flex items-center gap-1">
+                                    <div
+                                      className="font-bold truncate leading-tight flex items-center gap-1"
+                                      style={{ fontSize: '10px', fontFamily: 'Arial, sans-serif' }}
+                                    >
                                       {task.description}
                                       {isDelayed && <span className="text-[#C62828] shrink-0">⚠</span>}
                                     </div>
-                                    
                                     {task.assignees && task.assignees.length > 0 && (
                                       <div className="flex flex-wrap gap-1 mt-0.5">
                                         {task.assignees.map((assignee) => (
                                           <div
                                             key={assignee}
-                                            className="px-1 py-[1px] rounded-[2px] text-white font-bold leading-none flex items-center justify-center"
-                                            style={{ backgroundColor: ASSIGNEE_COLORS[assignee], fontSize: '7px' }}
+                                            className="px-1 py-[1px] rounded-[2px] text-white font-bold leading-none"
+                                            style={{
+                                              backgroundColor: ASSIGNEE_COLORS[assignee],
+                                              fontSize: '7px',
+                                            }}
                                             title={ASSIGNEE_LABELS[assignee]}
                                           >
                                             {ASSIGNEE_LABELS[assignee].substring(0, 2).toUpperCase()}
@@ -179,7 +200,7 @@ export default function ImplementationRoadmap({ data }: ImplementationRoadmapPro
                             })}
                           </div>
                         ))}
-                        {rows.length === 0 && <div style={{ height: '38px' }} />}
+                        {rows.length === 0 && <div style={{ height: '36px' }} />}
                       </div>
                     </div>
                   </div>

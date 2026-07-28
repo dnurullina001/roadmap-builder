@@ -2,268 +2,391 @@ import pptxgen from 'pptxgenjs';
 import { PhaseRoadmapData, ImplementationRoadmapData } from '@/types/roadmap';
 import { getStatusStyle, ASSIGNEE_LABELS } from '@/lib/status';
 
-const PHASE_COLORS = ['#0048F4', '#4472C4', '#ED7D31', '#70AD47', '#FFC000', '#5B9BD5'];
-const CORP_NAVY = '#44546A';
-const CORP_BLUE = '#0048F4';
+// ── Corporate slide layout (matches provided template) ──────────────────────
+const SLIDE_W = 12.598; // inches — from template XML (11520488 EMU)
+const SLIDE_H = 7.086;  // inches — from template XML (6480175 EMU)
 
-export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData): void {
-  const prs = new pptxgen();
-  prs.layout = 'LAYOUT_WIDE'; // 13.33" x 7.5" — standard widescreen
+// Margins
+const ML = 0.5;   // left margin
+const MR = 0.5;   // right margin
+const MB = 0.35;  // bottom margin
 
-  const slide = prs.addSlide();
-  slide.background = { color: 'FFFFFF' };
+const CW = SLIDE_W - ML - MR; // content width = 11.598"
 
-  // Title bar across full width
-  slide.addShape(prs.ShapeType.rect, {
-    x: 0.3, y: 0.15, w: 12.73, h: 0.45,
-    fill: { color: CORP_NAVY.replace('#', '') },
-    line: { color: CORP_NAVY.replace('#', '') },
-  });
-  slide.addText(data.title, {
-    x: 0.4, y: 0.17, w: 12.5, h: 0.4,
-    fontSize: 13, bold: true, color: 'FFFFFF',
-    fontFace: 'Calibri',
-  });
+// Title box
+const TITLE_Y = 0.28;
+const TITLE_H = 0.62;
+const TITLE_FONT = 'Times New Roman';
+const TITLE_SIZE = 28;
 
-  // Calculate dimensions
-  const COL_LABEL_W = 2.2;
-  const GRID_W = 12.73 - COL_LABEL_W - 0.3; // remaining width for period columns
-  const periodW = GRID_W / data.periods.length;
-  const ROW_START_Y = 0.8;
-  const HEADER_H = 0.3;
-  const ROW_H = 0.28; // height per sub-item row
+// Accent line below title
+const ACCENT_Y = TITLE_Y + TITLE_H;
 
-  // Period header row
-  // "ЭТАП" cell
-  slide.addShape(prs.ShapeType.rect, {
-    x: 0.3, y: ROW_START_Y, w: COL_LABEL_W, h: HEADER_H,
-    fill: { color: CORP_NAVY.replace('#', '') },
-    line: { color: CORP_NAVY.replace('#', ''), pt: 0.5 },
-  });
-  slide.addText('ЭТАП', {
-    x: 0.3, y: ROW_START_Y, w: COL_LABEL_W, h: HEADER_H,
-    fontSize: 8, bold: true, color: 'FFFFFF', align: 'left',
-    margin: [0, 0, 0, 4], fontFace: 'Calibri',
-  });
+// Content area starts below accent line
+const CONTENT_Y = ACCENT_Y + 0.15;
+const CONTENT_H = SLIDE_H - CONTENT_Y - MB; // ≈ 5.9"
 
-  // Period header cells
-  data.periods.forEach((period, idx) => {
-    const x = 0.3 + COL_LABEL_W + idx * periodW;
-    const isCurrent = idx === data.currentPosition;
-    slide.addShape(prs.ShapeType.rect, {
-      x, y: ROW_START_Y, w: periodW, h: HEADER_H,
-      fill: { color: isCurrent ? 'FFF4E6' : 'F5F5F5' },
-      line: { color: 'CCCCCC', pt: 0.5 },
-    });
-    slide.addText(period.toUpperCase(), {
-      x, y: ROW_START_Y, w: periodW, h: HEADER_H,
-      fontSize: 7, bold: true, color: isCurrent ? 'E67F00' : '555555',
-      align: 'center', fontFace: 'Calibri',
-    });
-    if (isCurrent) {
-      slide.addText('▲ МЫ ЗДЕСЬ', {
-        x: x - periodW * 0.3, y: ROW_START_Y - 0.22, w: periodW * 1.6, h: 0.2,
-        fontSize: 6, bold: true, color: 'E67F00', align: 'center', fontFace: 'Calibri',
-      });
-    }
-  });
+// Body text
+const BODY_FONT = 'Arial';
+const BODY_SIZE = 10;
 
-  // Phases and sub-items
-  let currentY = ROW_START_Y + HEADER_H;
+const CORP_NAVY = '44546A';
+const CORP_BLUE = '0048F4';
+const PHASE_COLORS = ['0048F4', '4472C4', 'ED7D31', '70AD47', 'FFC000', '5B9BD5'];
 
-  data.phases.forEach((phase, phaseIdx) => {
-    const phaseColor = PHASE_COLORS[phaseIdx % PHASE_COLORS.length];
-    const phaseRows = phase.subItems.length || 1;
-    const phaseH = phaseRows * ROW_H;
-
-    // Phase label cell (spans all sub-items)
-    slide.addShape(prs.ShapeType.rect, {
-      x: 0.3, y: currentY, w: COL_LABEL_W, h: phaseH,
-      fill: { color: 'FFFFFF' },
-      line: { color: 'CCCCCC', pt: 0.5 },
-    });
-    // Colored left border for phase
-    slide.addShape(prs.ShapeType.rect, {
-      x: 0.3, y: currentY, w: 0.06, h: phaseH,
-      fill: { color: phaseColor.replace('#', '') },
-      line: { color: phaseColor.replace('#', ''), pt: 0 },
-    });
-    slide.addText(`${phase.number}. ${phase.name}`, {
-      x: 0.4, y: currentY, w: COL_LABEL_W - 0.12, h: phaseH,
-      fontSize: 9, bold: true, color: '333333',
-      valign: 'middle', wrap: true, fontFace: 'Calibri',
-    });
-
-    // Sub-items
-    phase.subItems.forEach((item, itemIdx) => {
-      const itemY = currentY + itemIdx * ROW_H;
-      const statusStyle = getStatusStyle(item.status);
-
-      data.periods.forEach((_, periodIdx) => {
-        const isInRange = periodIdx >= item.startPeriod && periodIdx < item.endPeriod;
-        const isStart = periodIdx === item.startPeriod;
-        const x = 0.3 + COL_LABEL_W + periodIdx * periodW;
-        const bgColor = isInRange ? statusStyle.bg.replace('#', '') : 'FFFFFF';
-
-        slide.addShape(prs.ShapeType.rect, {
-          x, y: itemY, w: periodW, h: ROW_H,
-          fill: { color: bgColor },
-          line: { color: 'CCCCCC', pt: 0.5 },
-        });
-
-        if (isStart) {
-          const assigneeText = (item.assignees || []).map(a => ASSIGNEE_LABELS[a]).join(', ');
-          const prefix = statusStyle.icon + ' ';
-          slide.addText(prefix + item.description + (assigneeText ? `  [${assigneeText}]` : ''), {
-            x: x + 0.02, y: itemY + 0.01, w: periodW * (item.endPeriod - item.startPeriod) - 0.04, h: ROW_H - 0.02,
-            fontSize: 7.5, color: statusStyle.fg.replace('#', ''),
-            fontFace: 'Calibri', wrap: true, valign: 'middle',
-          });
-        }
-      });
-    });
-
-    currentY += phaseH;
-  });
-
-  prs.writeFile({ fileName: data.title.replace(/[^а-яёА-ЯЁa-zA-Z0-9]/g, '_') + '.pptx' });
+function setupLayout(prs: pptxgen) {
+  (prs as any).defineLayout({ name: 'CORP', width: SLIDE_W, height: SLIDE_H });
+  prs.layout = 'CORP' as any;
 }
 
-export function exportImplementationRoadmapToPptx(data: ImplementationRoadmapData): void {
+function addTitleBar(slide: pptxgen.Slide, title: string) {
+  // White background for title
+  slide.addShape('rect' as any, {
+    x: ML, y: TITLE_Y, w: CW, h: TITLE_H,
+    fill: { color: 'FFFFFF' },
+    line: { color: 'DDDDDD', pt: 0.5 },
+  });
+  slide.addText(title, {
+    x: ML + 0.15, y: TITLE_Y, w: CW - 0.3, h: TITLE_H,
+    fontFace: TITLE_FONT, fontSize: TITLE_SIZE,
+    bold: false, color: '000000', valign: 'middle',
+  });
+  // Accent line in corporate blue
+  slide.addShape('line' as any, {
+    x: ML, y: ACCENT_Y, w: CW, h: 0,
+    line: { color: CORP_BLUE, pt: 2 },
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PHASE ROADMAP (По этапам)
+// ════════════════════════════════════════════════════════════════════════════
+export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1): void {
   const prs = new pptxgen();
-  prs.layout = 'LAYOUT_WIDE';
+  setupLayout(prs);
 
-  const slide = prs.addSlide();
-  slide.background = { color: 'FFFFFF' };
+  // Split phases across slides
+  const allPhases = data.phases;
+  const phasesPerSlide = Math.ceil(allPhases.length / slideCount);
 
-  const SWIMLANE_LABEL_W = 2.0;
-  const GRID_W = 12.43;
-  const periodW = GRID_W / data.periods.length;
-  const MILESTONE_ROW_H = 0.8;
-  const SWIMLANE_H = 0.7;
+  for (let slideIdx = 0; slideIdx < slideCount; slideIdx++) {
+    const slidePhases = allPhases.slice(
+      slideIdx * phasesPerSlide,
+      (slideIdx + 1) * phasesPerSlide
+    );
+    if (slidePhases.length === 0) continue;
 
-  // Title
-  slide.addShape(prs.ShapeType.rect, {
-    x: 0.3, y: 0.1, w: 12.73, h: 0.4,
-    fill: { color: CORP_NAVY.replace('#', '') },
-  });
-  slide.addText(data.title, {
-    x: 0.4, y: 0.12, w: 12.5, h: 0.36,
-    fontSize: 12, bold: true, color: 'FFFFFF', fontFace: 'Calibri',
-  });
+    const slide = prs.addSlide();
+    slide.background = { color: 'FFFFFF' };
 
-  // Milestones row
-  const MILESTONE_Y = 0.6;
-  slide.addShape(prs.ShapeType.line, {
-    x: 0.3 + SWIMLANE_LABEL_W, y: MILESTONE_Y + MILESTONE_ROW_H - 0.05,
-    w: GRID_W, h: 0,
-    line: { color: CORP_BLUE.replace('#', ''), pt: 1.5 },
-  });
+    addTitleBar(slide, slideCount > 1
+      ? `${data.title}  (${slideIdx + 1}/${slideCount})`
+      : data.title
+    );
 
-  data.milestones.forEach((m) => {
-    const x = 0.3 + SWIMLANE_LABEL_W + m.periodIndex * periodW + periodW * 0.5;
-    slide.addShape(prs.ShapeType.rect, {
-      x: x - 0.6, y: MILESTONE_Y, w: 1.2, h: 0.28,
-      fill: { color: CORP_BLUE.replace('#', '') },
-      line: { color: CORP_BLUE.replace('#', '') },
-      rectRadius: 0.02,
+    // ── Grid dimensions ─────────────────────────────────────────────────
+    const COL_LABEL_W = 2.0;
+    const GRID_W = CW - COL_LABEL_W;
+    const periodW = GRID_W / data.periods.length;
+
+    const HEADER_H = 0.28;
+
+    // Auto-fit: total sub-item rows for phases on this slide
+    const totalItemRows = slidePhases.reduce(
+      (sum, p) => sum + Math.max(p.subItems.length, 1), 0
+    );
+    const availableH = CONTENT_H - HEADER_H;
+    const ROW_H = Math.min(0.38, Math.max(0.18, availableH / totalItemRows));
+
+    const GRID_START_Y = CONTENT_Y;
+
+    // ── ЭТАП header cell ─────────────────────────────────────────────────
+    slide.addShape('rect' as any, {
+      x: ML, y: GRID_START_Y, w: COL_LABEL_W, h: HEADER_H,
+      fill: { color: CORP_NAVY }, line: { color: CORP_NAVY, pt: 0.5 },
     });
-    slide.addText(m.label, {
-      x: x - 0.6, y: MILESTONE_Y, w: 1.2, h: 0.28,
-      fontSize: 5.5, bold: true, color: 'FFFFFF', align: 'center',
-      fontFace: 'Calibri', wrap: true,
+    slide.addText('ЭТАП', {
+      x: ML + 0.1, y: GRID_START_Y, w: COL_LABEL_W - 0.1, h: HEADER_H,
+      fontFace: BODY_FONT, fontSize: BODY_SIZE, bold: true, color: 'FFFFFF',
     });
-    slide.addShape(prs.ShapeType.line, {
-      x, y: MILESTONE_Y + 0.28, w: 0, h: MILESTONE_ROW_H - 0.33,
-      line: { color: CORP_BLUE.replace('#', ''), pt: 0.75 },
-    });
-  });
 
-  // Period headers
-  const HEADER_Y = MILESTONE_Y + MILESTONE_ROW_H;
-  data.periods.forEach((period, idx) => {
-    const x = 0.3 + SWIMLANE_LABEL_W + idx * periodW;
-    slide.addShape(prs.ShapeType.rect, {
-      x, y: HEADER_Y, w: periodW, h: 0.25,
-      fill: { color: 'F0F0F0' }, line: { color: 'CCCCCC', pt: 0.5 },
-    });
-    slide.addText(period, {
-      x, y: HEADER_Y, w: periodW, h: 0.25,
-      fontSize: 7, color: '666666', align: 'center', fontFace: 'Calibri',
-    });
-  });
-
-  // Swimlanes
-  const SWIMLANE_COLORS = ['#0048F4', '#4472C4', '#ED7D31', '#70AD47', '#FFC000', '#5B9BD5'];
-  let swimY = HEADER_Y + 0.25;
-
-  data.swimlanes.forEach((swimlane, swimIdx) => {
-    const color = SWIMLANE_COLORS[swimIdx % SWIMLANE_COLORS.length];
-
-    // Compute rows to avoid overlap
-    const sorted = [...swimlane.tasks].sort((a, b) => a.startPeriod - b.startPeriod);
-    const taskRows: typeof sorted[] = [];
-    for (const task of sorted) {
-      let placed = false;
-      for (const row of taskRows) {
-        const last = row[row.length - 1];
-        if (last.startPeriod + last.span <= task.startPeriod) {
-          row.push(task); placed = true; break;
-        }
+    // ── Period header cells ──────────────────────────────────────────────
+    data.periods.forEach((period, idx) => {
+      const x = ML + COL_LABEL_W + idx * periodW;
+      const isCurrent = idx === data.currentPosition;
+      slide.addShape('rect' as any, {
+        x, y: GRID_START_Y, w: periodW, h: HEADER_H,
+        fill: { color: isCurrent ? 'FFF4E6' : 'F5F5F5' },
+        line: { color: 'CCCCCC', pt: 0.5 },
+      });
+      slide.addText(period.toUpperCase(), {
+        x, y: GRID_START_Y, w: periodW, h: HEADER_H,
+        fontFace: BODY_FONT, fontSize: BODY_SIZE - 1,
+        bold: true, color: isCurrent ? 'CC6600' : '555555', align: 'center',
+      });
+      if (isCurrent) {
+        slide.addText('▲ МЫ ЗДЕСЬ', {
+          x: x - periodW * 0.3, y: GRID_START_Y - 0.2,
+          w: periodW * 1.6, h: 0.18,
+          fontFace: BODY_FONT, fontSize: BODY_SIZE - 3,
+          bold: true, color: 'CC6600', align: 'center',
+        });
       }
-      if (!placed) taskRows.push([task]);
-    }
-    const rowCount = Math.max(taskRows.length, 1);
-    const rowH = SWIMLANE_H / rowCount;
-
-    // Swimlane label
-    slide.addShape(prs.ShapeType.rect, {
-      x: 0.3, y: swimY, w: SWIMLANE_LABEL_W, h: SWIMLANE_H,
-      fill: { color: 'FFFFFF' }, line: { color: 'CCCCCC', pt: 0.5 },
-    });
-    slide.addShape(prs.ShapeType.rect, {
-      x: 0.3, y: swimY, w: 0.06, h: SWIMLANE_H,
-      fill: { color: color.replace('#', '') },
-    });
-    slide.addText(swimlane.name, {
-      x: 0.4, y: swimY, w: SWIMLANE_LABEL_W - 0.12, h: SWIMLANE_H,
-      fontSize: 9, bold: true, color: '333333', valign: 'middle', fontFace: 'Calibri',
     });
 
-    // Grid background cells
-    data.periods.forEach((_, pIdx) => {
-      const x = 0.3 + SWIMLANE_LABEL_W + pIdx * periodW;
-      slide.addShape(prs.ShapeType.rect, {
-        x, y: swimY, w: periodW, h: SWIMLANE_H,
-        fill: { color: 'FAFAFA' }, line: { color: 'E0E0E0', pt: 0.5 },
+    // ── Phases & sub-items ───────────────────────────────────────────────
+    let currentY = GRID_START_Y + HEADER_H;
+
+    slidePhases.forEach((phase, phaseIdx) => {
+      const phaseColor = PHASE_COLORS[phaseIdx % PHASE_COLORS.length];
+      const rows = Math.max(phase.subItems.length, 1);
+      const phaseH = rows * ROW_H;
+
+      // Phase label cell
+      slide.addShape('rect' as any, {
+        x: ML, y: currentY, w: COL_LABEL_W, h: phaseH,
+        fill: { color: 'FFFFFF' }, line: { color: 'CCCCCC', pt: 0.5 },
+      });
+      slide.addShape('rect' as any, {
+        x: ML, y: currentY, w: 0.05, h: phaseH,
+        fill: { color: phaseColor }, line: { color: phaseColor, pt: 0 },
+      });
+      slide.addText(`${phase.number}. ${phase.name}`, {
+        x: ML + 0.1, y: currentY, w: COL_LABEL_W - 0.15, h: phaseH,
+        fontFace: BODY_FONT, fontSize: BODY_SIZE - 1,
+        bold: true, color: '222222', valign: 'middle', wrap: true,
+      });
+
+      // Sub-items grid
+      if (phase.subItems.length === 0) {
+        data.periods.forEach((_, periodIdx) => {
+          const x = ML + COL_LABEL_W + periodIdx * periodW;
+          slide.addShape('rect' as any, {
+            x, y: currentY, w: periodW, h: ROW_H,
+            fill: { color: 'FAFAFA' }, line: { color: 'DDDDDD', pt: 0.5 },
+          });
+        });
+      } else {
+        phase.subItems.forEach((item, itemIdx) => {
+          const itemY = currentY + itemIdx * ROW_H;
+          const statusStyle = getStatusStyle(item.status);
+
+          data.periods.forEach((_, periodIdx) => {
+            const x = ML + COL_LABEL_W + periodIdx * periodW;
+            const inRange = periodIdx >= item.startPeriod && periodIdx < item.endPeriod;
+            const isStart = periodIdx === item.startPeriod;
+            const bgColor = inRange ? statusStyle.bg.replace('#', '') : 'FFFFFF';
+
+            slide.addShape('rect' as any, {
+              x, y: itemY, w: periodW, h: ROW_H,
+              fill: { color: bgColor }, line: { color: 'DDDDDD', pt: 0.5 },
+            });
+
+            if (isStart) {
+              const assigneeText = (item.assignees || []).map((a) => ASSIGNEE_LABELS[a]).join(', ');
+              const spanW = periodW * (item.endPeriod - item.startPeriod);
+              const textContent = item.description + (assigneeText ? `  [${assigneeText}]` : '');
+              slide.addText(textContent, {
+                x: x + 0.03, y: itemY + 0.01,
+                w: spanW - 0.06, h: ROW_H - 0.02,
+                fontFace: BODY_FONT, fontSize: BODY_SIZE,
+                color: statusStyle.fg.replace('#', ''),
+                wrap: true, valign: 'middle',
+              });
+            }
+          });
+        });
+      }
+
+      currentY += phaseH;
+    });
+  }
+
+  prs.writeFile({ fileName: safeFileName(data.title) + '.pptx' });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// IMPLEMENTATION ROADMAP (По потокам)
+// ════════════════════════════════════════════════════════════════════════════
+export function exportImplementationRoadmapToPptx(
+  data: ImplementationRoadmapData,
+  slideCount = 1
+): void {
+  const prs = new pptxgen();
+  setupLayout(prs);
+
+  const allLanes = data.swimlanes;
+  const lanesPerSlide = Math.ceil(allLanes.length / slideCount);
+
+  for (let slideIdx = 0; slideIdx < slideCount; slideIdx++) {
+    const slideLanes = allLanes.slice(
+      slideIdx * lanesPerSlide,
+      (slideIdx + 1) * lanesPerSlide
+    );
+    if (slideLanes.length === 0) continue;
+
+    const slide = prs.addSlide();
+    slide.background = { color: 'FFFFFF' };
+
+    addTitleBar(slide, slideCount > 1
+      ? `${data.title}  (${slideIdx + 1}/${slideCount})`
+      : data.title
+    );
+
+    // ── Dimensions ─────────────────────────────────────────────────────
+    const LABEL_W = 2.0;
+    const GRID_W = CW - LABEL_W;
+    const periodW = GRID_W / data.periods.length;
+
+    const MILESTONE_H = 0.7;
+    const HEADER_H = 0.26;
+
+    // Auto-fit swimlane heights
+    const maxRows = Math.max(
+      ...slideLanes.map((sl) => {
+        const sorted = [...sl.tasks].sort((a, b) => a.startPeriod - b.startPeriod);
+        const rows: typeof sorted[] = [];
+        for (const t of sorted) {
+          let placed = false;
+          for (const r of rows) {
+            if (r[r.length - 1].startPeriod + r[r.length - 1].span <= t.startPeriod) {
+              r.push(t); placed = true; break;
+            }
+          }
+          if (!placed) rows.push([t]);
+        }
+        return Math.max(rows.length, 1);
+      }),
+      1
+    );
+
+    const availableH = CONTENT_H - MILESTONE_H - HEADER_H;
+    const LANE_H = Math.min(0.75, Math.max(0.32, availableH / slideLanes.length));
+    const TASK_ROW_H = LANE_H / maxRows;
+
+    const MILE_Y = CONTENT_Y;
+    const HEADER_Y = MILE_Y + MILESTONE_H;
+    let laneY = HEADER_Y + HEADER_H;
+
+    // ── Milestone row ──────────────────────────────────────────────────
+    slide.addShape('line' as any, {
+      x: ML + LABEL_W, y: MILE_Y + MILESTONE_H - 0.05,
+      w: GRID_W, h: 0,
+      line: { color: CORP_BLUE, pt: 1.5 },
+    });
+
+    data.milestones.forEach((m) => {
+      const cx = ML + LABEL_W + m.periodIndex * periodW + periodW * 0.5;
+      slide.addShape('rect' as any, {
+        x: cx - 0.55, y: MILE_Y, w: 1.1, h: 0.26,
+        fill: { color: CORP_BLUE }, line: { color: CORP_BLUE }, rectRadius: 0.02,
+      });
+      slide.addText(m.label, {
+        x: cx - 0.55, y: MILE_Y, w: 1.1, h: 0.26,
+        fontFace: BODY_FONT, fontSize: BODY_SIZE - 2,
+        bold: true, color: 'FFFFFF', align: 'center', wrap: true,
+      });
+      slide.addShape('line' as any, {
+        x: cx, y: MILE_Y + 0.26, w: 0, h: MILESTONE_H - 0.31,
+        line: { color: CORP_BLUE, pt: 0.75 },
       });
     });
 
-    // Tasks in each row
-    taskRows.forEach((rowTasks, rowIdx) => {
-      const taskY = swimY + rowIdx * rowH + 0.03;
-      rowTasks.forEach((task) => {
-        const statusStyle = getStatusStyle(task.status);
-        const x = 0.3 + SWIMLANE_LABEL_W + task.startPeriod * periodW + 0.02;
-        const w = task.span * periodW - 0.04;
-        const assigneeText = (task.assignees || []).map(a => ASSIGNEE_LABELS[a]).join(', ');
-
-        slide.addShape(prs.ShapeType.rect, {
-          x, y: taskY, w, h: rowH - 0.06,
-          fill: { color: statusStyle.bg.replace('#', '') },
-          line: { color: statusStyle.border.replace('#', ''), pt: 1 },
-          rectRadius: 0.04,
-        });
-        slide.addText(task.description + (assigneeText ? `  [${assigneeText}]` : ''), {
-          x: x + 0.04, y: taskY + 0.01, w: w - 0.08, h: rowH - 0.08,
-          fontSize: 7, color: statusStyle.fg.replace('#', ''),
-          fontFace: 'Calibri', wrap: true, valign: 'middle',
-        });
+    // ── Period header ──────────────────────────────────────────────────
+    slide.addShape('rect' as any, {
+      x: ML, y: HEADER_Y, w: LABEL_W, h: HEADER_H,
+      fill: { color: CORP_NAVY }, line: { color: CORP_NAVY, pt: 0.5 },
+    });
+    data.periods.forEach((period, idx) => {
+      const x = ML + LABEL_W + idx * periodW;
+      slide.addShape('rect' as any, {
+        x, y: HEADER_Y, w: periodW, h: HEADER_H,
+        fill: { color: 'F0F0F0' }, line: { color: 'CCCCCC', pt: 0.5 },
+      });
+      slide.addText(period, {
+        x, y: HEADER_Y, w: periodW, h: HEADER_H,
+        fontFace: BODY_FONT, fontSize: BODY_SIZE - 1,
+        color: '666666', align: 'center',
       });
     });
 
-    swimY += SWIMLANE_H;
-  });
+    // ── Swimlanes ──────────────────────────────────────────────────────
+    const SWIMLANE_COLORS = PHASE_COLORS;
 
-  prs.writeFile({ fileName: data.title.replace(/[^а-яёА-ЯЁa-zA-Z0-9]/g, '_') + '.pptx' });
+    slideLanes.forEach((swimlane, swimIdx) => {
+      const color = SWIMLANE_COLORS[swimIdx % SWIMLANE_COLORS.length];
+
+      const sorted = [...swimlane.tasks].sort((a, b) => a.startPeriod - b.startPeriod);
+      const taskRows: typeof sorted[] = [];
+      for (const task of sorted) {
+        let placed = false;
+        for (const row of taskRows) {
+          const last = row[row.length - 1];
+          if (last.startPeriod + last.span <= task.startPeriod) {
+            row.push(task); placed = true; break;
+          }
+        }
+        if (!placed) taskRows.push([task]);
+      }
+      const rowCount = Math.max(taskRows.length, 1);
+      const actualLaneH = rowCount * TASK_ROW_H + 0.06;
+
+      // Label cell
+      slide.addShape('rect' as any, {
+        x: ML, y: laneY, w: LABEL_W, h: actualLaneH,
+        fill: { color: 'FFFFFF' }, line: { color: 'CCCCCC', pt: 0.5 },
+      });
+      slide.addShape('rect' as any, {
+        x: ML, y: laneY, w: 0.05, h: actualLaneH,
+        fill: { color }, line: { color, pt: 0 },
+      });
+      slide.addText(swimlane.name, {
+        x: ML + 0.1, y: laneY, w: LABEL_W - 0.15, h: actualLaneH,
+        fontFace: BODY_FONT, fontSize: BODY_SIZE,
+        bold: true, color: '222222', valign: 'middle',
+      });
+
+      // Grid background
+      data.periods.forEach((_, pIdx) => {
+        const x = ML + LABEL_W + pIdx * periodW;
+        slide.addShape('rect' as any, {
+          x, y: laneY, w: periodW, h: actualLaneH,
+          fill: { color: 'FAFAFA' }, line: { color: 'E8E8E8', pt: 0.5 },
+        });
+      });
+
+      // Tasks
+      taskRows.forEach((rowTasks, rowIdx) => {
+        const taskY = laneY + rowIdx * TASK_ROW_H + 0.03;
+        rowTasks.forEach((task) => {
+          const statusStyle = getStatusStyle(task.status);
+          const x = ML + LABEL_W + task.startPeriod * periodW + 0.02;
+          const w = task.span * periodW - 0.04;
+          const assigneeText = (task.assignees || []).map((a) => ASSIGNEE_LABELS[a]).join(', ');
+          const taskText = task.description + (assigneeText ? `  [${assigneeText}]` : '');
+
+          slide.addShape('rect' as any, {
+            x, y: taskY, w, h: TASK_ROW_H - 0.06,
+            fill: { color: statusStyle.bg.replace('#', '') },
+            line: { color: statusStyle.border.replace('#', ''), pt: 1 },
+            rectRadius: 0.03,
+          });
+          slide.addText(taskText, {
+            x: x + 0.04, y: taskY + 0.01, w: w - 0.08, h: TASK_ROW_H - 0.08,
+            fontFace: BODY_FONT, fontSize: BODY_SIZE,
+            color: statusStyle.fg.replace('#', ''),
+            wrap: true, valign: 'middle',
+          });
+        });
+      });
+
+      laneY += actualLaneH;
+    });
+  }
+
+  prs.writeFile({ fileName: safeFileName(data.title) + '.pptx' });
+}
+
+function safeFileName(title: string): string {
+  return title.replace(/[^а-яёА-ЯЁa-zA-Z0-9\s\-_]/g, '').trim() || 'roadmap';
 }

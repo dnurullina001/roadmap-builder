@@ -4,22 +4,23 @@ import { demoPhaseData, demoImplementationData } from '@/lib/demo-data';
 import RoadmapForm from '@/components/form/RoadmapForm';
 import PhaseRoadmap from '@/components/roadmap/PhaseRoadmap';
 import ImplementationRoadmap from '@/components/roadmap/ImplementationRoadmap';
+import ProjectsModal from '@/components/ProjectsModal';
+import SlideCountDialog from '@/components/SlideCountDialog';
 import { exportPhaseRoadmapToPptx, exportImplementationRoadmapToPptx } from '@/lib/export-pptx';
+import { SavedProject, saveNewVersion, createProject } from '@/lib/projects';
 
 const STORAGE_KEY = 'roadmap-builder-state';
+const ACTIVE_PROJECT_KEY = 'vektor-active-project';
 
 function loadState(): RoadmapState {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
+    if (stored) return JSON.parse(stored);
   } catch (e) {
-    console.error('Failed to load state from localStorage:', e);
+    console.error('Failed to load state:', e);
   }
-  
   return {
-    mode: 'phase',
+    mode: 'implementation', // По потокам is now the default first tab
     phaseData: demoPhaseData,
     implementationData: demoImplementationData,
   };
@@ -29,46 +30,93 @@ function saveState(state: RoadmapState) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (e) {
-    console.error('Failed to save state to localStorage:', e);
+    console.error('Failed to save state:', e);
   }
 }
 
 export default function RoadmapBuilder() {
   const [state, setState] = useState<RoadmapState>(loadState);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(() => {
+    return localStorage.getItem(ACTIVE_PROJECT_KEY);
+  });
+  const [showProjects, setShowProjects] = useState(false);
+  const [showSlideDialog, setShowSlideDialog] = useState(false);
 
   useEffect(() => {
     saveState(state);
   }, [state]);
 
+  useEffect(() => {
+    if (currentProjectId) {
+      localStorage.setItem(ACTIVE_PROJECT_KEY, currentProjectId);
+    } else {
+      localStorage.removeItem(ACTIVE_PROJECT_KEY);
+    }
+  }, [currentProjectId]);
+
   const handleReset = () => {
-    const resetState: RoadmapState = {
-      mode: 'phase',
+    setState({
+      mode: 'implementation',
       phaseData: demoPhaseData,
       implementationData: demoImplementationData,
-    };
-    setState(resetState);
+    });
   };
 
   const handleExport = () => {
     window.print();
   };
 
+  // Opens the slide-count dialog before exporting PPTX
   const handleExportPptx = () => {
+    setShowSlideDialog(true);
+  };
+
+  const handleSlideCountConfirm = (count: number) => {
+    setShowSlideDialog(false);
     if (state.mode === 'phase') {
-      exportPhaseRoadmapToPptx(state.phaseData);
+      exportPhaseRoadmapToPptx(state.phaseData, count);
     } else {
-      exportImplementationRoadmapToPptx(state.implementationData);
+      exportImplementationRoadmapToPptx(state.implementationData, count);
     }
+  };
+
+  // Quick-save: save current state as new version of active project,
+  // or prompt to create a new one if none is active
+  const handleQuickSave = () => {
+    if (currentProjectId) {
+      const updated = saveNewVersion(currentProjectId, state);
+      if (updated) {
+        // Brief visual feedback — just open the projects modal to confirm
+        setShowProjects(true);
+      }
+    } else {
+      // No active project → open projects modal so user can create/choose one
+      setShowProjects(true);
+    }
+  };
+
+  const handleProjectLoad = (loadedState: RoadmapState, projectId: string) => {
+    setState(loadedState);
+    setCurrentProjectId(projectId);
+  };
+
+  const handleProjectCreated = (project: SavedProject) => {
+    setCurrentProjectId(project.id);
+  };
+
+  const handleVersionSaved = (project: SavedProject) => {
+    setCurrentProjectId(project.id);
   };
 
   return (
     <div className="h-[100dvh] flex overflow-hidden bg-background">
-      {/* Left Panel - Form */}
+      {/* Left Panel — Form */}
       <div className="w-[35%] shrink-0 no-print border-r border-border h-full">
         <RoadmapForm
           mode={state.mode}
           phaseData={state.phaseData}
           implementationData={state.implementationData}
+          currentProjectId={currentProjectId}
           onModeChange={(mode) => setState({ ...state, mode })}
           onPhaseDataChange={(phaseData) => setState({ ...state, phaseData })}
           onImplementationDataChange={(implementationData) =>
@@ -77,12 +125,13 @@ export default function RoadmapBuilder() {
           onReset={handleReset}
           onExport={handleExport}
           onExportPptx={handleExportPptx}
+          onOpenProjects={() => setShowProjects(true)}
+          onQuickSave={handleQuickSave}
         />
       </div>
 
-      {/* Right Panel - Preview */}
+      {/* Right Panel — Preview */}
       <div className="flex-1 overflow-hidden bg-[#EBEBEB] flex flex-col">
-        {/* Roadmap Preview */}
         <div className="flex-1 overflow-auto roadmap-slide">
           {state.mode === 'phase' ? (
             <PhaseRoadmap data={state.phaseData} />
@@ -93,51 +142,41 @@ export default function RoadmapBuilder() {
 
         {/* Status Legend */}
         <div className="shrink-0 bg-white border-t border-border px-6 py-3 flex items-center gap-6 text-[11px] font-medium no-print shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-20">
-          <span className="text-muted-foreground uppercase tracking-wider text-[10px]">Легенда статусов:</span>
-          <div className="flex items-center gap-2">
-            <div
-              className="w-3.5 h-3.5 rounded-[3px] border shadow-sm"
-              style={{
-                backgroundColor: 'var(--status-done-bg)',
-                borderColor: 'var(--status-done-border)',
-              }}
-            />
-            <span className="text-foreground">Готово</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div
-              className="w-3.5 h-3.5 rounded-[3px] border shadow-sm"
-              style={{
-                backgroundColor: 'var(--status-inprogress-bg)',
-                borderColor: 'var(--status-inprogress-border)',
-              }}
-            />
-            <span className="text-foreground">В работе</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div
-              className="w-3.5 h-3.5 rounded-[3px] border shadow-sm"
-              style={{
-                backgroundColor: 'var(--status-backlog-bg)',
-                borderColor: 'var(--status-backlog-border)',
-              }}
-            />
-            <span className="text-foreground">Бэклог</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div
-              className="w-3.5 h-3.5 rounded-[3px] border shadow-sm flex items-center justify-center text-[#C62828] text-[8px] font-bold"
-              style={{
-                backgroundColor: 'var(--status-delayed-bg)',
-                borderColor: 'var(--status-delayed-border)',
-              }}
-            >
-              ⚠
+          <span className="text-muted-foreground uppercase tracking-wider text-[10px]">Статусы:</span>
+          {[
+            { label: 'Готово', bg: 'var(--status-done-bg)', border: 'var(--status-done-border)' },
+            { label: 'В работе', bg: 'var(--status-inprogress-bg)', border: 'var(--status-inprogress-border)' },
+            { label: 'Бэклог', bg: 'var(--status-backlog-bg)', border: 'var(--status-backlog-border)' },
+            { label: 'Задержка', bg: 'var(--status-delayed-bg)', border: 'var(--status-delayed-border)' },
+          ].map(({ label, bg, border }) => (
+            <div key={label} className="flex items-center gap-2">
+              <div
+                className="w-3.5 h-3.5 rounded-[3px] border shadow-sm"
+                style={{ backgroundColor: bg, borderColor: border }}
+              />
+              <span className="text-foreground">{label}</span>
             </div>
-            <span className="text-foreground">Задержка</span>
-          </div>
+          ))}
         </div>
       </div>
+
+      {/* Projects Modal */}
+      <ProjectsModal
+        open={showProjects}
+        onClose={() => setShowProjects(false)}
+        currentState={state}
+        currentProjectId={currentProjectId}
+        onLoad={handleProjectLoad}
+        onProjectCreated={handleProjectCreated}
+        onVersionSaved={handleVersionSaved}
+      />
+
+      {/* Slide count dialog */}
+      <SlideCountDialog
+        open={showSlideDialog}
+        onConfirm={handleSlideCountConfirm}
+        onCancel={() => setShowSlideDialog(false)}
+      />
     </div>
   );
 }

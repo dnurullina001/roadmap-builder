@@ -21,12 +21,16 @@ export default function PhaseRoadmap({ data }: PhaseRoadmapProps) {
         <div className="p-6 flex-1 overflow-auto">
           <table className="border-collapse w-full table-fixed">
             <thead>
-              {/* Title row */}
+              {/* Title row — black on white per corporate standard */}
               <tr>
                 <th
                   colSpan={periods.length + 1}
-                  className="border border-border text-white font-bold px-4 py-3 text-left tracking-tight"
-                  style={{ backgroundColor: '#44546A', fontSize: '13px' }}
+                  className="border border-[#DDDDDD] text-black font-bold px-4 py-3 text-left tracking-tight bg-white border-b-2"
+                  style={{
+                    fontFamily: 'Times New Roman, serif',
+                    fontSize: '18px',
+                    borderBottomColor: '#0048F4',
+                  }}
                 >
                   {title}
                 </th>
@@ -35,7 +39,7 @@ export default function PhaseRoadmap({ data }: PhaseRoadmapProps) {
               <tr>
                 <th
                   className="border border-border text-white w-56 px-3 py-2 text-left font-bold"
-                  style={{ backgroundColor: '#44546A', fontSize: '11px' }}
+                  style={{ backgroundColor: '#44546A', fontSize: '11px', fontFamily: 'Arial, sans-serif' }}
                 >
                   ЭТАП
                 </th>
@@ -46,8 +50,9 @@ export default function PhaseRoadmap({ data }: PhaseRoadmapProps) {
                     style={{
                       backgroundColor: idx === currentPosition ? '#FFF4E6' : '#F5F5F5',
                       borderLeftColor: idx === currentPosition ? '#FFC000' : undefined,
-                      borderLeftWidth: idx === currentPosition ? '3px' : undefined,
-                      color: idx === currentPosition ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+                      borderLeftWidth: idx === currentPosition ? '2px' : undefined,
+                      color: idx === currentPosition ? '#CC6600' : 'hsl(var(--muted-foreground))',
+                      fontFamily: 'Arial, sans-serif',
                     }}
                   >
                     <div className="uppercase tracking-wide font-bold" style={{ fontSize: '11px' }}>
@@ -55,7 +60,7 @@ export default function PhaseRoadmap({ data }: PhaseRoadmapProps) {
                     </div>
                     {idx === currentPosition && (
                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                        <div className="font-bold uppercase tracking-wider mb-0.5" style={{ color: '#FFC000', fontSize: '10px' }}>
+                        <div className="font-bold uppercase tracking-wider mb-0.5" style={{ color: '#FFC000', fontSize: '10px', fontFamily: 'Arial, sans-serif' }}>
                           Мы здесь
                         </div>
                         <ArrowUp className="w-4 h-4" style={{ color: '#FFC000' }} />
@@ -75,10 +80,10 @@ export default function PhaseRoadmap({ data }: PhaseRoadmapProps) {
                       style={{ borderLeftColor: phaseColor, borderLeftWidth: '3px' }}
                     >
                       <div className="flex items-start gap-2">
-                        <span className="font-mono text-muted-foreground shrink-0" style={{ fontSize: '12px' }}>
+                        <span className="font-mono text-muted-foreground shrink-0" style={{ fontSize: '11px' }}>
                           {phase.number}
                         </span>
-                        <span className="text-foreground leading-tight font-bold" style={{ fontSize: '12px' }}>
+                        <span className="text-foreground leading-tight font-bold" style={{ fontSize: '11px', fontFamily: 'Arial, sans-serif' }}>
                           {phase.name}
                         </span>
                       </div>
@@ -93,19 +98,14 @@ export default function PhaseRoadmap({ data }: PhaseRoadmapProps) {
                                   periodIdx >= item.startPeriod &&
                                   periodIdx < item.endPeriod;
                                 const isStart = periodIdx === item.startPeriod;
-                                const milestone = milestones.find(
-                                  (m) => m.periodIndex === periodIdx && m.phaseIndex === phaseIdx
-                                );
-
                                 const statusStyle = isInRange ? getStatusStyle(item.status) : undefined;
                                 const isDelayed = item.status === 'delayed';
 
-                                // Custom CSS for striped background if delayed
                                 const cellStyle: React.CSSProperties = {
                                   backgroundColor: statusStyle?.bg,
                                   color: statusStyle?.fg,
                                 };
-                                
+
                                 if (isInRange && isDelayed) {
                                   cellStyle.backgroundImage = `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(198, 40, 40, 0.05) 10px, rgba(198, 40, 40, 0.05) 20px)`;
                                 }
@@ -122,14 +122,13 @@ export default function PhaseRoadmap({ data }: PhaseRoadmapProps) {
                                           <span className="font-mono opacity-70 mt-0.5 shrink-0" style={{ fontSize: '10px' }}>
                                             {phase.number}.{itemIndex + 1}
                                           </span>
-                                          <span className="leading-snug flex-1 font-medium text-[11px] truncate" title={item.description}>
+                                          <span className="leading-snug flex-1 font-medium truncate" style={{ fontSize: '10px', fontFamily: 'Arial, sans-serif' }} title={item.description}>
                                             {item.description}
                                           </span>
                                           {isDelayed && (
                                             <span className="text-[#C62828] font-bold shrink-0 ml-1">⚠</span>
                                           )}
                                         </div>
-                                        {/* Assignee badges */}
                                         {item.assignees && item.assignees.length > 0 && (
                                           <div className="flex flex-wrap gap-1 mt-auto pt-1">
                                             {item.assignees.map((assignee) => (
@@ -146,15 +145,23 @@ export default function PhaseRoadmap({ data }: PhaseRoadmapProps) {
                                         )}
                                       </div>
                                     )}
-                                    {milestone && (
-                                      <div className="absolute top-1 right-1 z-10">
-                                        <div
-                                          className="w-2.5 h-2.5 rotate-45 border-2 border-white shadow-sm"
-                                          style={{ backgroundColor: phaseColor }}
-                                          title={milestone.label}
-                                        />
-                                      </div>
-                                    )}
+                                    {/* Milestones: small colored flag text only — no diamond */}
+                                    {(() => {
+                                      const milestone = milestones.find(
+                                        (m) => m.periodIndex === periodIdx && m.phaseIndex === phaseIdx
+                                      );
+                                      return milestone ? (
+                                        <div className="absolute top-0.5 right-0.5 z-10">
+                                          <div
+                                            className="text-white px-1 py-0.5 rounded-sm text-[7px] font-bold leading-none whitespace-nowrap"
+                                            style={{ backgroundColor: phaseColor }}
+                                            title={milestone.label}
+                                          >
+                                            ★ {milestone.label}
+                                          </div>
+                                        </div>
+                                      ) : null;
+                                    })()}
                                   </td>
                                 );
                               })}
