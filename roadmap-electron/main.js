@@ -1,7 +1,32 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, protocol, net } = require('electron');
 const path = require('path');
+const { pathToFileURL } = require('url');
+const fs = require('fs');
+
+// MUST be called before app.whenReady()
+// Registers 'app://' as a secure, standard scheme so that:
+//   - ES modules (type="module") load without CORS errors
+//   - localStorage / sessionStorage work normally
+//   - fetch() inside the app works
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+      allowServiceWorkers: true,
+    },
+  },
+]);
 
 let mainWindow;
+
+function getWebRoot() {
+  return app.isPackaged
+    ? path.join(__dirname, 'app-dist')
+    : path.join(__dirname, '..', 'artifacts', 'roadmap-builder', 'dist', 'public');
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -16,30 +41,12 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
     },
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#f0f4ff',
   });
 
-  // When packaged: web files are copied into app-dist/ alongside main.js
-  // __dirname in a packaged app = the folder where the .exe unpacks Electron resources
-  // (NOT inside asar — we set asar:false, so __dirname is the real resources path)
-  const indexHtml = app.isPackaged
-    ? path.join(__dirname, 'app-dist', 'index.html')
-    : path.join(__dirname, '..', 'artifacts', 'roadmap-builder', 'dist', 'public', 'index.html');
-
-  console.log('Loading:', indexHtml);
-
-  mainWindow.loadFile(indexHtml).catch((err) => {
-    console.error('Failed to load app:', err);
-    mainWindow.loadURL(
-      'data:text/html,' +
-        encodeURIComponent(
-          `<html><body style="font-family:sans-serif;padding:40px;background:#fff">
-            <h2 style="color:#c00">Ошибка загрузки приложения</h2>
-            <p>Путь: <code>${indexHtml}</code></p>
-            <p>${err.message}</p>
-          </body></html>`
-        )
-    );
+  // Load via custom app:// protocol — avoids file:// CORS block on ES modules
+  mainWindow.loadURL('app://vektor/').catch((err) => {
+    console.error('loadURL failed:', err);
   });
 
   Menu.setApplicationMenu(null);
@@ -50,7 +57,30 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  const webRoot = getWebRoot();
+
+  // Serve all files under app://vektor/* from the webRoot folder
+  protocol.handle('app', (request) => {
+    const url = new URL(request.url);
+    let pathname = url.pathname;
+
+    // Root → index.html
+    if (pathname === '/' || pathname === '') {
+      pathname = '/index.html';
+    }
+
+    const filePath = path.join(webRoot, pathname);
+
+    // If the file doesn't exist (e.g. SPA deep link), fall back to index.html
+    if (!fs.existsSync(filePath)) {
+      return net.fetch(pathToFileURL(path.join(webRoot, 'index.html')).toString());
+    }
+
+    return net.fetch(pathToFileURL(filePath).toString());
+  });
+
   createWindow();
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

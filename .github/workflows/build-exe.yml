@@ -33,11 +33,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build web app
-        # BASE_PATH=./ → Vite generates relative ./assets/... paths
-        # Required for Electron file:// loading to work correctly
+        # BASE_PATH=/ — Vite generates absolute /assets/... paths.
+        # This is correct because Electron serves via app:// custom protocol,
+        # NOT file://. The protocol handler maps app://vektor/assets/... → disk.
         run: pnpm --filter @workspace/roadmap-builder run build
         env:
-          BASE_PATH: ./
+          BASE_PATH: /
           PORT: 3000
           NODE_ENV: production
 
@@ -67,15 +68,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          # Drop directly into roadmap-electron/app-dist/
-          # electron-builder includes this folder via files[] in package.json
+          # Goes into roadmap-electron/app-dist/
+          # electron-builder picks it up via files[] in package.json
           path: roadmap-electron/app-dist
 
       - name: Convert PNG icon to ICO
-        # NSIS requires a real .ico file — PNG causes "invalid icon file" error.
+        # NSIS requires a real .ico — PNG causes "invalid icon file".
         # ImageMagick (magick) is pre-installed on windows-latest runners.
-        run: |
-          magick "roadmap-electron/build/icon.png" -resize 256x256 "roadmap-electron/build/icon.ico"
+        run: magick "roadmap-electron/build/icon.png" -resize 256x256 "roadmap-electron/build/icon.ico"
 
       - name: Install Electron deps
         working-directory: roadmap-electron
@@ -94,10 +94,10 @@ jobs:
           tag_name: latest
           name: "Vektor — latest release"
           body: |
-            ## Vektor — Roadmap Builder
+            ## Vektor — Roadmap Builder (Вектор)
 
-            **Installer:** `Vektor Setup 1.0.0.exe` — download and run, shortcut appears on the desktop.
-            **Portable ZIP:** `Vektor-1.0.0-win.zip` — unzip the archive and run `Vektor.exe` inside.
+            **Установщик:** скачайте `Vektor Setup 1.0.0.exe` и запустите — появится ярлык на рабочем столе.
+            **Portable:** скачайте `Vektor-1.0.0-win.zip`, **распакуйте полностью**, запустите `Vektor.exe` из папки.
           files: |
             roadmap-electron/dist-electron/*.exe
             roadmap-electron/dist-electron/*.zip
