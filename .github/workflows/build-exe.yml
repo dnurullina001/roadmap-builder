@@ -9,48 +9,47 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-windows:
+    name: Сборка Windows .exe
     runs-on: windows-latest
 
     steps:
-      - name: Скачать код
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Установить Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
-      - name: Установить pnpm
+      - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: '10'
           run_install: false
 
-      - name: Установить зависимости проекта
-        # --no-frozen-lockfile нужен чтобы pnpm докачал
-        # Windows-специфичные нативные бинарники (rollup, esbuild и т.д.)
-        # которых нет в lockfile созданном на Linux
+      - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Собрать веб-приложение
+      - name: Build web app
         run: pnpm --filter @workspace/roadmap-builder run build
         env:
           BASE_PATH: /
           PORT: 3000
           NODE_ENV: production
 
-      - name: Установить зависимости Electron
+      - name: Install Electron deps
         working-directory: roadmap-electron
         run: npm install
 
-      - name: Собрать Windows-инсталлятор
+      - name: Build Windows installer
         working-directory: roadmap-electron
         run: npm run dist
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Опубликовать в Releases
+      - name: Publish to Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
