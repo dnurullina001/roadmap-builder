@@ -4,10 +4,9 @@
   "description": "Roadmap Builder — desktop app for Windows",
   "main": "main.js",
   "scripts": {
-    "build-web": "cd ../artifacts/roadmap-builder && BASE_PATH=/ PORT=3000 pnpm run build",
     "start": "electron .",
-    "dist": "pnpm run build-web && electron-builder --win --x64",
-    "dist-portable": "pnpm run build-web && electron-builder --win portable --x64"
+    "dist": "electron-builder --win --x64",
+    "dist-portable": "electron-builder --win portable --x64"
   },
   "build": {
     "appId": "com.roadmapbuilder.app",
