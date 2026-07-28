@@ -9,9 +9,10 @@ permissions:
   contents: write
 
 jobs:
-  build-windows:
-    name: Сборка Windows .exe
-    runs-on: windows-latest
+  # ── Job 1: собираем веб-приложение на Linux (нет проблем с Windows-бинарниками) ──
+  build-web:
+    name: Сборка веб-приложения (Linux)
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -29,7 +30,7 @@ jobs:
           run_install: false
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build web app
         run: pnpm --filter @workspace/roadmap-builder run build
@@ -37,6 +38,34 @@ jobs:
           BASE_PATH: /
           PORT: 3000
           NODE_ENV: production
+
+      - name: Upload built web app
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: artifacts/roadmap-builder/dist/public
+          retention-days: 1
+
+  # ── Job 2: упаковываем EXE на Windows (electron-builder нативно) ──
+  build-exe:
+    name: Сборка Windows .exe
+    runs-on: windows-latest
+    needs: build-web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download built web app
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: artifacts/roadmap-builder/dist/public
 
       - name: Install Electron deps
         working-directory: roadmap-electron
