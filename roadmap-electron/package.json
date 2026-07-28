@@ -2,6 +2,11 @@
   "name": "roadmap-builder-desktop",
   "version": "1.0.0",
   "description": "Roadmap Builder — desktop app for Windows",
+  "author": "dnurullina001",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dnurullina001/roadmap-builder.git"
+  },
   "main": "main.js",
   "scripts": {
     "start": "electron .",
