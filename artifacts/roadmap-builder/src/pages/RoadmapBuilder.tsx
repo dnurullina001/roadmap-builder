@@ -55,7 +55,7 @@ export default function RoadmapBuilder() {
   return (
     <div className="h-screen flex overflow-hidden bg-background">
       {/* Left Panel - Form */}
-      <div className="w-[35%] shrink-0">
+      <div className="w-[35%] shrink-0 no-print">
         <RoadmapForm
           mode={state.mode}
           phaseData={state.phaseData}
@@ -71,12 +71,50 @@ export default function RoadmapBuilder() {
       </div>
 
       {/* Right Panel - Preview */}
-      <div className="flex-1 overflow-hidden bg-muted/20">
-        {state.mode === 'phase' ? (
-          <PhaseRoadmap data={state.phaseData} />
-        ) : (
-          <ImplementationRoadmap data={state.implementationData} />
-        )}
+      <div className="flex-1 overflow-hidden bg-[#EBEBEB] flex flex-col">
+        {/* Roadmap Preview */}
+        <div className="flex-1 overflow-auto roadmap-slide">
+          {state.mode === 'phase' ? (
+            <PhaseRoadmap data={state.phaseData} />
+          ) : (
+            <ImplementationRoadmap data={state.implementationData} />
+          )}
+        </div>
+
+        {/* Status Legend */}
+        <div className="shrink-0 bg-white border-t border-border px-6 py-3 flex items-center gap-6 text-xs no-print">
+          <span className="text-muted-foreground font-medium">Легенда:</span>
+          <div className="flex items-center gap-2">
+            <div
+              className="w-4 h-4 rounded-sm border"
+              style={{
+                backgroundColor: 'var(--status-done-bg)',
+                borderColor: 'var(--status-done-border)',
+              }}
+            />
+            <span className="text-foreground">Готово</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div
+              className="w-4 h-4 rounded-sm border"
+              style={{
+                backgroundColor: 'var(--status-inprogress-bg)',
+                borderColor: 'var(--status-inprogress-border)',
+              }}
+            />
+            <span className="text-foreground">В работе</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div
+              className="w-4 h-4 rounded-sm border"
+              style={{
+                backgroundColor: 'var(--status-backlog-bg)',
+                borderColor: 'var(--status-backlog-border)',
+              }}
+            />
+            <span className="text-foreground">Бэклог</span>
+          </div>
+        </div>
       </div>
     </div>
   );

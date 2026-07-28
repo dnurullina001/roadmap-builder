@@ -1,18 +1,20 @@
 export type RoadmapMode = 'phase' | 'implementation';
 
+export type ItemStatus = 'done' | 'in-progress' | 'backlog';
+
 export interface PhaseSubItem {
   id: string;
   number: string; // e.g., "1.1", "1.2"
   description: string;
   startPeriod: number;
   endPeriod: number;
+  status: ItemStatus;
 }
 
 export interface Phase {
   id: string;
   number: number;
   name: string;
-  color: string;
   subItems: PhaseSubItem[];
 }
 
@@ -36,13 +38,12 @@ export interface Task {
   description: string;
   startPeriod: number;
   span: number; // How many periods it spans
-  notes?: string;
+  status: ItemStatus;
 }
 
 export interface Swimlane {
   id: string;
   name: string;
-  color: string;
   tasks: Task[];
 }
 
