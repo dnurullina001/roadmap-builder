@@ -16,12 +16,19 @@
       "electron-builder"
     ],
     "supportedArchitectures": {
-      "os": ["win32", "linux", "darwin"],
-      "cpu": ["x64"]
+      "os": [
+        "win32",
+        "linux",
+        "darwin"
+      ],
+      "cpu": [
+        "x64"
+      ]
     }
   },
   "dependencies": {
-    "@replit/connectors-sdk": "^0.4.1"
+    "@replit/connectors-sdk": "^0.4.1",
+    "puppeteer-core": "^25.4.0"
   },
   "devDependencies": {
     "prettier": "^3.9.6",
