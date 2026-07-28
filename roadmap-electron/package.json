@@ -1,7 +1,7 @@
 {
   "name": "vektor-desktop",
   "version": "1.0.0",
-  "description": "Вектор — инструмент для создания дорожных карт",
+  "description": "Vektor — roadmap planning tool",
   "author": "dnurullina001",
   "repository": {
     "type": "git",
@@ -14,7 +14,7 @@
   },
   "build": {
     "appId": "com.vektor.roadmap",
-    "productName": "Вектор",
+    "productName": "Vektor",
     "asar": false,
     "directories": {
       "output": "dist-electron"
@@ -30,15 +30,16 @@
         { "target": "nsis", "arch": ["x64"] },
         { "target": "zip",  "arch": ["x64"] }
       ],
-      "icon": "build/icon.png"
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Вектор",
-      "installerIcon": "build/icon.png"
+      "shortcutName": "Vektor",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     },
     "compression": "normal"
   },
