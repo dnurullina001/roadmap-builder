@@ -112,7 +112,7 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData): void {
         });
 
         if (isStart) {
-          const assigneeText = item.assignees.map(a => ASSIGNEE_LABELS[a]).join(', ');
+          const assigneeText = (item.assignees || []).map(a => ASSIGNEE_LABELS[a]).join(', ');
           const prefix = statusStyle.icon + ' ';
           slide.addText(prefix + item.description + (assigneeText ? `  [${assigneeText}]` : ''), {
             x: x + 0.02, y: itemY + 0.01, w: periodW * (item.endPeriod - item.startPeriod) - 0.04, h: ROW_H - 0.02,
@@ -246,7 +246,7 @@ export function exportImplementationRoadmapToPptx(data: ImplementationRoadmapDat
         const statusStyle = getStatusStyle(task.status);
         const x = 0.3 + SWIMLANE_LABEL_W + task.startPeriod * periodW + 0.02;
         const w = task.span * periodW - 0.04;
-        const assigneeText = task.assignees.map(a => ASSIGNEE_LABELS[a]).join(', ');
+        const assigneeText = (task.assignees || []).map(a => ASSIGNEE_LABELS[a]).join(', ');
 
         slide.addShape(prs.ShapeType.rect, {
           x, y: taskY, w, h: rowH - 0.06,

@@ -102,8 +102,12 @@ export default function RoadmapForm({
   onExport,
   onExportPptx,
 }: RoadmapFormProps) {
-  const [openPhases, setOpenPhases] = useState<Record<string, boolean>>({});
-  const [openSwimLanes, setOpenSwimLanes] = useState<Record<string, boolean>>({});
+  const [openPhases, setOpenPhases] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(phaseData.phases.map(p => [p.id, false]))
+  );
+  const [openSwimLanes, setOpenSwimLanes] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(implementationData.swimlanes.map(s => [s.id, false]))
+  );
 
   const data = mode === 'phase' ? phaseData : implementationData;
 
