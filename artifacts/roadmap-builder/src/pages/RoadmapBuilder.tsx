@@ -65,6 +65,9 @@ export default function RoadmapBuilder() {
     });
   };
 
+  // Wrap data-change handlers with functional setState to avoid stale closures
+  // when many phases/swimlanes exist and React batches updates.
+
   const handleExport = () => {
     window.print();
   };
@@ -134,10 +137,10 @@ export default function RoadmapBuilder() {
           phaseData={state.phaseData}
           implementationData={state.implementationData}
           currentProjectId={currentProjectId}
-          onModeChange={(mode) => setState({ ...state, mode })}
-          onPhaseDataChange={(phaseData) => setState({ ...state, phaseData })}
+          onModeChange={(mode) => setState((prev) => ({ ...prev, mode }))}
+          onPhaseDataChange={(phaseData) => setState((prev) => ({ ...prev, phaseData }))}
           onImplementationDataChange={(implementationData) =>
-            setState({ ...state, implementationData })
+            setState((prev) => ({ ...prev, implementationData }))
           }
           onReset={handleReset}
           onExport={handleExport}
