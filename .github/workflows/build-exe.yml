@@ -3,10 +3,10 @@ name: Собрать Windows EXE
 on:
   push:
     branches: [main]
-  workflow_dispatch:   # кнопка «Run workflow» в интерфейсе GitHub
+  workflow_dispatch:
 
 permissions:
-  contents: write      # нужно для создания Release
+  contents: write
 
 jobs:
   build:
@@ -22,10 +22,16 @@ jobs:
           node-version: '20'
 
       - name: Установить pnpm
-        run: npm install -g pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
 
-      - name: Установить зависимости всего проекта
-        run: pnpm install
+      - name: Установить зависимости проекта
+        # --no-frozen-lockfile нужен чтобы pnpm докачал
+        # Windows-специфичные нативные бинарники (rollup, esbuild и т.д.)
+        # которых нет в lockfile созданном на Linux
+        run: pnpm install --no-frozen-lockfile
 
       - name: Собрать веб-приложение
         run: pnpm --filter @workspace/roadmap-builder run build
@@ -38,7 +44,7 @@ jobs:
         working-directory: roadmap-electron
         run: npm install
 
-      - name: Собрать Windows-инсталлятор (.exe)
+      - name: Собрать Windows-инсталлятор
         working-directory: roadmap-electron
         run: npm run dist
         env:
@@ -50,8 +56,6 @@ jobs:
           tag_name: latest
           name: "Roadmap Builder — последняя версия"
           body: |
-            Скачайте файл **Roadmap Builder Setup.exe** и запустите установщик.
-            
-            После установки программа появится в меню «Пуск» и на рабочем столе.
+            Скачайте **Roadmap Builder Setup.exe** и запустите — установится как обычная программа.
           files: roadmap-electron/dist-electron/*.exe
           make_latest: true
