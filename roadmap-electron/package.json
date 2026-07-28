@@ -1,0 +1,57 @@
+{
+  "name": "roadmap-builder-desktop",
+  "version": "1.0.0",
+  "description": "Roadmap Builder — desktop app for Windows",
+  "main": "main.js",
+  "scripts": {
+    "build-web": "cd ../artifacts/roadmap-builder && BASE_PATH=/ PORT=3000 pnpm run build",
+    "start": "electron .",
+    "dist": "pnpm run build-web && electron-builder --win --x64",
+    "dist-portable": "pnpm run build-web && electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "com.roadmapbuilder.app",
+    "productName": "Roadmap Builder",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "!node_modules/**",
+      "!dist-electron/**"
+    ],
+    "extraResources": [
+      {
+        "from": "../artifacts/roadmap-builder/dist/public",
+        "to": "app",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "installerHeaderIcon": "icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Roadmap Builder"
+    },
+    "portable": {
+      "artifactName": "RoadmapBuilder-portable.exe"
+    },
+    "compression": "maximum",
+    "asar": true
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}

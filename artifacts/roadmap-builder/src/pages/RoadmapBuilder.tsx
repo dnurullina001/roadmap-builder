@@ -4,6 +4,7 @@ import { demoPhaseData, demoImplementationData } from '@/lib/demo-data';
 import RoadmapForm from '@/components/form/RoadmapForm';
 import PhaseRoadmap from '@/components/roadmap/PhaseRoadmap';
 import ImplementationRoadmap from '@/components/roadmap/ImplementationRoadmap';
+import { exportPhaseRoadmapToPptx, exportImplementationRoadmapToPptx } from '@/lib/export-pptx';
 
 const STORAGE_KEY = 'roadmap-builder-state';
 
@@ -52,10 +53,18 @@ export default function RoadmapBuilder() {
     window.print();
   };
 
+  const handleExportPptx = () => {
+    if (state.mode === 'phase') {
+      exportPhaseRoadmapToPptx(state.phaseData);
+    } else {
+      exportImplementationRoadmapToPptx(state.implementationData);
+    }
+  };
+
   return (
-    <div className="h-screen flex overflow-hidden bg-background">
+    <div className="h-[100dvh] flex overflow-hidden bg-background">
       {/* Left Panel - Form */}
-      <div className="w-[35%] shrink-0 no-print">
+      <div className="w-[35%] shrink-0 no-print border-r border-border h-full">
         <RoadmapForm
           mode={state.mode}
           phaseData={state.phaseData}
@@ -67,6 +76,7 @@ export default function RoadmapBuilder() {
           }
           onReset={handleReset}
           onExport={handleExport}
+          onExportPptx={handleExportPptx}
         />
       </div>
 
@@ -82,11 +92,11 @@ export default function RoadmapBuilder() {
         </div>
 
         {/* Status Legend */}
-        <div className="shrink-0 bg-white border-t border-border px-6 py-3 flex items-center gap-6 text-xs no-print">
-          <span className="text-muted-foreground font-medium">Легенда:</span>
+        <div className="shrink-0 bg-white border-t border-border px-6 py-3 flex items-center gap-6 text-[11px] font-medium no-print shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-20">
+          <span className="text-muted-foreground uppercase tracking-wider text-[10px]">Легенда статусов:</span>
           <div className="flex items-center gap-2">
             <div
-              className="w-4 h-4 rounded-sm border"
+              className="w-3.5 h-3.5 rounded-[3px] border shadow-sm"
               style={{
                 backgroundColor: 'var(--status-done-bg)',
                 borderColor: 'var(--status-done-border)',
@@ -96,7 +106,7 @@ export default function RoadmapBuilder() {
           </div>
           <div className="flex items-center gap-2">
             <div
-              className="w-4 h-4 rounded-sm border"
+              className="w-3.5 h-3.5 rounded-[3px] border shadow-sm"
               style={{
                 backgroundColor: 'var(--status-inprogress-bg)',
                 borderColor: 'var(--status-inprogress-border)',
@@ -106,13 +116,25 @@ export default function RoadmapBuilder() {
           </div>
           <div className="flex items-center gap-2">
             <div
-              className="w-4 h-4 rounded-sm border"
+              className="w-3.5 h-3.5 rounded-[3px] border shadow-sm"
               style={{
                 backgroundColor: 'var(--status-backlog-bg)',
                 borderColor: 'var(--status-backlog-border)',
               }}
             />
             <span className="text-foreground">Бэклог</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div
+              className="w-3.5 h-3.5 rounded-[3px] border shadow-sm flex items-center justify-center text-[#C62828] text-[8px] font-bold"
+              style={{
+                backgroundColor: 'var(--status-delayed-bg)',
+                borderColor: 'var(--status-delayed-border)',
+              }}
+            >
+              ⚠
+            </div>
+            <span className="text-foreground">Задержка</span>
           </div>
         </div>
       </div>

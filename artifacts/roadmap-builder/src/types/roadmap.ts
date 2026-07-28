@@ -1,14 +1,30 @@
 export type RoadmapMode = 'phase' | 'implementation';
 
-export type ItemStatus = 'done' | 'in-progress' | 'backlog';
+export type ItemStatus = 'done' | 'in-progress' | 'backlog' | 'delayed';
+
+export type Assignee = 'pm' | 'analyst' | 'developer' | 'tester';
+
+export const ASSIGNEE_LABELS: Record<Assignee, string> = {
+  pm: 'ПМ',
+  analyst: 'Аналитик',
+  developer: 'Разработчик',
+  tester: 'Тестировщик',
+};
+
+export const ASSIGNEE_COLORS: Record<Assignee, string> = {
+  pm: '#0048F4',
+  analyst: '#4472C4',
+  developer: '#ED7D31',
+  tester: '#70AD47',
+};
 
 export interface PhaseSubItem {
   id: string;
-  number: string; // e.g., "1.1", "1.2"
   description: string;
   startPeriod: number;
-  endPeriod: number;
+  endPeriod: number;        // exclusive: endPeriod=2 means spans periods 0,1
   status: ItemStatus;
+  assignees: Assignee[];
 }
 
 export interface Phase {
@@ -22,13 +38,13 @@ export interface Milestone {
   id: string;
   label: string;
   periodIndex: number;
-  phaseIndex?: number; // For phase roadmap, which phase row to show the milestone on
+  phaseIndex?: number;
 }
 
 export interface PhaseRoadmapData {
   title: string;
-  periods: string[]; // e.g., ["январь", "февраль", "март"]
-  currentPosition: number; // Index of "we are here" column
+  periods: string[];
+  currentPosition: number;
   phases: Phase[];
   milestones: Milestone[];
 }
@@ -37,8 +53,9 @@ export interface Task {
   id: string;
   description: string;
   startPeriod: number;
-  span: number; // How many periods it spans
+  span: number;
   status: ItemStatus;
+  assignees: Assignee[];
 }
 
 export interface Swimlane {
@@ -49,13 +66,13 @@ export interface Swimlane {
 
 export interface ImplementationMilestone {
   id: string;
-  label: string; // ALL CAPS
+  label: string;
   periodIndex: number;
 }
 
 export interface ImplementationRoadmapData {
   title: string;
-  periods: string[]; // e.g., ["1 месяц", "1 месяц", "2 месяца"]
+  periods: string[];
   milestones: ImplementationMilestone[];
   swimlanes: Swimlane[];
 }
