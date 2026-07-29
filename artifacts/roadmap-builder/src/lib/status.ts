@@ -1,4 +1,4 @@
-import { ItemStatus, Assignee, ASSIGNEE_LABELS, ASSIGNEE_COLORS } from '@/types/roadmap';
+import { ItemStatus, Assignee, AssigneeRole, DEFAULT_ASSIGNEE_ROLES } from '@/types/roadmap';
 
 export interface StatusStyle {
   bg: string;
@@ -19,4 +19,24 @@ export function getStatusStyle(status: ItemStatus): StatusStyle {
   return STATUS_STYLES[status] || STATUS_STYLES.backlog;
 }
 
-export { ASSIGNEE_LABELS, ASSIGNEE_COLORS };
+// Helper: resolve label from custom roles or defaults
+export function getAssigneeLabel(id: Assignee, roles?: AssigneeRole[]): string {
+  const list = roles && roles.length > 0 ? roles : DEFAULT_ASSIGNEE_ROLES;
+  return list.find(r => r.id === id)?.label ?? id;
+}
+
+// Helper: resolve color from custom roles or defaults
+export function getAssigneeColor(id: Assignee, roles?: AssigneeRole[]): string {
+  const list = roles && roles.length > 0 ? roles : DEFAULT_ASSIGNEE_ROLES;
+  return list.find(r => r.id === id)?.color ?? '#888888';
+}
+
+// Legacy static maps (computed from defaults) for backward compat
+export const ASSIGNEE_LABELS: Record<string, string> = Object.fromEntries(
+  DEFAULT_ASSIGNEE_ROLES.map(r => [r.id, r.label])
+);
+export const ASSIGNEE_COLORS: Record<string, string> = Object.fromEntries(
+  DEFAULT_ASSIGNEE_ROLES.map(r => [r.id, r.color])
+);
+
+export { DEFAULT_ASSIGNEE_ROLES, AssigneeRole };

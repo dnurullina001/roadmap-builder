@@ -1,15 +1,16 @@
-import { PhaseRoadmapData } from '@/types/roadmap';
+import { PhaseRoadmapData, AssigneeRole } from '@/types/roadmap';
 import { ArrowUp } from 'lucide-react';
-import { getStatusStyle, ASSIGNEE_LABELS, ASSIGNEE_COLORS } from '@/lib/status';
+import { getStatusStyle, getAssigneeLabel, getAssigneeColor } from '@/lib/status';
 
 interface PhaseRoadmapProps {
   data: PhaseRoadmapData;
   fullscreen?: boolean;
+  assigneeRoles?: AssigneeRole[];
 }
 
 const PHASE_COLORS = ['#0048F4', '#4472C4', '#ED7D31', '#70AD47', '#FFC000', '#5B9BD5'];
 
-export default function PhaseRoadmap({ data, fullscreen = false }: PhaseRoadmapProps) {
+export default function PhaseRoadmap({ data, fullscreen = false, assigneeRoles }: PhaseRoadmapProps) {
   const { title, periods, currentPosition, phases, milestones } = data;
 
   return (
@@ -24,12 +25,11 @@ export default function PhaseRoadmap({ data, fullscreen = false }: PhaseRoadmapP
         </div>
 
         <div className="p-6 flex-1 overflow-auto">
-          {/* Fullscreen: scale content up so it reads well from across a room /
-              on a screen-share, without changing the underlying layout math. */}
+          {/* Fullscreen: scale content up more so it reads well from across a room */}
           <div
             style={
               fullscreen
-                ? { transform: 'scale(1.25)', transformOrigin: 'top left', width: '80%' }
+                ? { transform: 'scale(1.45)', transformOrigin: 'top left', width: '69%' }
                 : undefined
             }
           >
@@ -39,7 +39,7 @@ export default function PhaseRoadmap({ data, fullscreen = false }: PhaseRoadmapP
               <tr>
                 <th
                   colSpan={periods.length + 1}
-                  className="border border-[#DDDDDD] text-black font-bold px-4 py-3 text-left tracking-tight bg-white border-b-2"
+                  className="text-black font-bold px-4 py-3 text-left tracking-tight bg-white border-b-2"
                   style={{
                     fontFamily: 'Times New Roman, serif',
                     fontSize: '18px',
@@ -149,17 +149,17 @@ export default function PhaseRoadmap({ data, fullscreen = false }: PhaseRoadmapP
                                               <div
                                                 key={assignee}
                                                 className="px-1.5 py-0.5 rounded-[3px] text-white font-bold leading-none flex items-center justify-center"
-                                                style={{ backgroundColor: ASSIGNEE_COLORS[assignee], fontSize: '8px' }}
-                                                title={ASSIGNEE_LABELS[assignee]}
+                                                style={{ backgroundColor: getAssigneeColor(assignee, assigneeRoles), fontSize: '8px' }}
+                                                title={getAssigneeLabel(assignee, assigneeRoles)}
                                               >
-                                                {ASSIGNEE_LABELS[assignee].substring(0, 2).toUpperCase()}
+                                                {getAssigneeLabel(assignee, assigneeRoles).substring(0, 2).toUpperCase()}
                                               </div>
                                             ))}
                                           </div>
                                         )}
                                       </div>
                                     )}
-                                    {/* Milestones: small colored flag text only — no diamond */}
+                                    {/* Milestones: small colored flag text only */}
                                     {(() => {
                                       const milestone = milestones.find(
                                         (m) => m.periodIndex === periodIdx && m.phaseIndex === phaseIdx

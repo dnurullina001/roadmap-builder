@@ -1,10 +1,11 @@
-import { ImplementationRoadmapData, Task } from '@/types/roadmap';
+import { ImplementationRoadmapData, Task, AssigneeRole } from '@/types/roadmap';
 import { Flag } from 'lucide-react';
-import { getStatusStyle, ASSIGNEE_LABELS, ASSIGNEE_COLORS } from '@/lib/status';
+import { getStatusStyle, getAssigneeLabel, getAssigneeColor } from '@/lib/status';
 
 interface ImplementationRoadmapProps {
   data: ImplementationRoadmapData;
   fullscreen?: boolean;
+  assigneeRoles?: AssigneeRole[];
 }
 
 const SWIMLANE_COLORS = ['#0048F4', '#4472C4', '#ED7D31', '#70AD47', '#FFC000', '#5B9BD5'];
@@ -27,7 +28,7 @@ function layoutTasksIntoRows(tasks: Task[]): Task[][] {
   return rows;
 }
 
-export default function ImplementationRoadmap({ data, fullscreen = false }: ImplementationRoadmapProps) {
+export default function ImplementationRoadmap({ data, fullscreen = false, assigneeRoles }: ImplementationRoadmapProps) {
   const { title, periods, milestones, swimlanes } = data;
 
   return (
@@ -38,19 +39,18 @@ export default function ImplementationRoadmap({ data, fullscreen = false }: Impl
         </div>
 
         <div className="p-6 flex-1 overflow-auto flex flex-col">
-          {/* Fullscreen: scale content up so it reads well from across a room /
-              on a screen-share, without changing the underlying layout math. */}
+          {/* Fullscreen: scale content up more for client presentation */}
           <div
             className="flex-1 flex flex-col min-h-0"
             style={
               fullscreen
-                ? { transform: 'scale(1.2)', transformOrigin: 'top left', width: '83.3%' }
+                ? { transform: 'scale(1.45)', transformOrigin: 'top left', width: '69%' }
                 : undefined
             }
           >
           {/* Title — black on white with blue underline accent */}
           <div
-            className="text-black font-bold px-4 py-3 mb-0 tracking-tight border border-[#DDDDDD] border-b-2 bg-white"
+            className="text-black font-bold px-4 py-3 mb-0 tracking-tight bg-white border-b-2"
             style={{
               fontFamily: 'Times New Roman, serif',
               fontSize: '18px',
@@ -104,7 +104,7 @@ export default function ImplementationRoadmap({ data, fullscreen = false }: Impl
               {periods.map((period, idx) => (
                 <div
                   key={idx}
-                  className="py-2 text-center font-bold uppercase text-muted-foreground border-l border-border"
+                  className="py-2 text-center font-bold uppercase text-foreground border-l border-border"
                   style={{
                     width: `${100 / periods.length}%`,
                     fontSize: '11px',
@@ -121,7 +121,6 @@ export default function ImplementationRoadmap({ data, fullscreen = false }: Impl
               {swimlanes.map((swimlane, swimlaneIdx) => {
                 const swimlaneColor = SWIMLANE_COLORS[swimlaneIdx % SWIMLANE_COLORS.length];
                 const rows = layoutTasksIntoRows(swimlane.tasks);
-                const minRows = Math.max(rows.length, 1);
 
                 return (
                   <div key={swimlane.id} className="flex border-r border-l border-border border-b last:border-b-0 group">
@@ -195,12 +194,12 @@ export default function ImplementationRoadmap({ data, fullscreen = false }: Impl
                                             key={assignee}
                                             className="px-1 py-[1px] rounded-[2px] text-white font-bold leading-none"
                                             style={{
-                                              backgroundColor: ASSIGNEE_COLORS[assignee],
+                                              backgroundColor: getAssigneeColor(assignee, assigneeRoles),
                                               fontSize: '7px',
                                             }}
-                                            title={ASSIGNEE_LABELS[assignee]}
+                                            title={getAssigneeLabel(assignee, assigneeRoles)}
                                           >
-                                            {ASSIGNEE_LABELS[assignee].substring(0, 2).toUpperCase()}
+                                            {getAssigneeLabel(assignee, assigneeRoles).substring(0, 2).toUpperCase()}
                                           </div>
                                         ))}
                                       </div>

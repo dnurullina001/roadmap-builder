@@ -2,21 +2,21 @@ export type RoadmapMode = 'phase' | 'implementation';
 
 export type ItemStatus = 'done' | 'in-progress' | 'backlog' | 'delayed';
 
-export type Assignee = 'pm' | 'analyst' | 'developer' | 'tester';
+// Assignee is now a plain string key (e.g. 'pm', 'analyst', or any custom id)
+export type Assignee = string;
 
-export const ASSIGNEE_LABELS: Record<Assignee, string> = {
-  pm: 'ПМ',
-  analyst: 'Аналитик',
-  developer: 'Разработчик',
-  tester: 'Тестировщик',
-};
+export interface AssigneeRole {
+  id: string;
+  label: string;
+  color: string;
+}
 
-export const ASSIGNEE_COLORS: Record<Assignee, string> = {
-  pm: '#0048F4',
-  analyst: '#4472C4',
-  developer: '#ED7D31',
-  tester: '#70AD47',
-};
+export const DEFAULT_ASSIGNEE_ROLES: AssigneeRole[] = [
+  { id: 'pm',        label: 'ПМ',           color: '#0048F4' },
+  { id: 'analyst',   label: 'Аналитик',     color: '#4472C4' },
+  { id: 'developer', label: 'Разработчик',  color: '#ED7D31' },
+  { id: 'tester',    label: 'Тестировщик',  color: '#70AD47' },
+];
 
 export interface PhaseSubItem {
   id: string;
@@ -83,4 +83,5 @@ export interface RoadmapState {
   mode: RoadmapMode;
   phaseData: PhaseRoadmapData;
   implementationData: ImplementationRoadmapData;
+  assigneeRoles?: AssigneeRole[];
 }

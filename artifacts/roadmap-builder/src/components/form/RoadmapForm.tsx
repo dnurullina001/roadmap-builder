@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { RoadmapMode, PhaseRoadmapData, ImplementationRoadmapData, Phase, PhaseSubItem, Swimlane, Task, Milestone, ImplementationMilestone, ItemStatus, Assignee } from '@/types/roadmap';
-import { ASSIGNEE_LABELS, ASSIGNEE_COLORS, STATUS_STYLES } from '@/lib/status';
+import { RoadmapMode, PhaseRoadmapData, ImplementationRoadmapData, Phase, PhaseSubItem, Swimlane, Task, Milestone, ImplementationMilestone, ItemStatus, Assignee, AssigneeRole } from '@/types/roadmap';
+import { STATUS_STYLES, getAssigneeLabel, getAssigneeColor } from '@/lib/status';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Plus, Trash2, ChevronDown, RotateCcw, Download, Presentation, FolderOpen, Save, HelpCircle, Eye, EyeOff, X } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, RotateCcw, Download, Presentation, FolderOpen, Save, HelpCircle, Eye, EyeOff, X, Pencil, Check } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
@@ -17,9 +17,11 @@ interface RoadmapFormProps {
   implementationData: ImplementationRoadmapData;
   currentProjectId: string | null;
   hiddenModes: RoadmapMode[];
+  assigneeRoles: AssigneeRole[];
   onModeChange: (mode: RoadmapMode) => void;
   onPhaseDataChange: (data: PhaseRoadmapData) => void;
   onImplementationDataChange: (data: ImplementationRoadmapData) => void;
+  onAssigneeRolesChange: (roles: AssigneeRole[]) => void;
   onReset: () => void;
   onExport: () => void;
   onExportPptx: () => void;
@@ -28,6 +30,11 @@ interface RoadmapFormProps {
   onShowHelp: () => void;
   onToggleHideMode: (mode: RoadmapMode) => void;
 }
+
+const PRESET_COLORS = [
+  '#0048F4', '#4472C4', '#ED7D31', '#70AD47', '#FFC000', '#5B9BD5',
+  '#C62828', '#6A0DAD', '#00796B', '#E64A19', '#37474F', '#F06292',
+];
 
 const StatusToggle = ({ value, onChange }: { value: ItemStatus; onChange: (status: ItemStatus) => void }) => {
   return (
@@ -55,32 +62,40 @@ const StatusToggle = ({ value, onChange }: { value: ItemStatus; onChange: (statu
   );
 };
 
-const AssigneeToggle = ({ values, onChange }: { values: Assignee[]; onChange: (assignees: Assignee[]) => void }) => {
-  const toggleAssignee = (role: Assignee) => {
-    if (values.includes(role)) {
-      onChange(values.filter(v => v !== role));
+const AssigneeToggle = ({
+  values,
+  onChange,
+  roles,
+}: {
+  values: Assignee[];
+  onChange: (assignees: Assignee[]) => void;
+  roles: AssigneeRole[];
+}) => {
+  const toggleAssignee = (id: string) => {
+    if (values.includes(id)) {
+      onChange(values.filter(v => v !== id));
     } else {
-      onChange([...values, role]);
+      onChange([...values, id]);
     }
   };
 
   return (
     <div className="flex gap-1 flex-wrap">
-      {(Object.keys(ASSIGNEE_LABELS) as Assignee[]).map((role) => {
-        const isActive = values.includes(role);
+      {roles.map((role) => {
+        const isActive = values.includes(role.id);
         return (
           <button
-            key={role}
+            key={role.id}
             type="button"
-            onClick={() => toggleAssignee(role)}
+            onClick={() => toggleAssignee(role.id)}
             className={`px-1.5 py-0 h-[20px] text-[9px] rounded-sm transition-colors border font-medium`}
             style={{
-              backgroundColor: isActive ? ASSIGNEE_COLORS[role] : 'white',
+              backgroundColor: isActive ? role.color : 'white',
               color: isActive ? 'white' : '#555',
-              borderColor: isActive ? ASSIGNEE_COLORS[role] : '#E2E8F0',
+              borderColor: isActive ? role.color : '#E2E8F0',
             }}
           >
-            {ASSIGNEE_LABELS[role]}
+            {role.label}
           </button>
         );
       })}
@@ -88,19 +103,172 @@ const AssigneeToggle = ({ values, onChange }: { values: Assignee[]; onChange: (a
   );
 };
 
+// ── Section divider with bold, high-contrast header ──────────────────────────
+function SectionDivider({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-0 my-1">
+      <div className="flex-1 h-px bg-border" />
+    </div>
+  );
+}
+
 function SectionHeader({ title }: { title: string }) {
   return (
     <div
-      className="flex items-center gap-2 mb-2.5 rounded-[4px] px-2.5 py-1.5"
-      style={{ backgroundColor: 'rgba(0, 72, 244, 0.07)' }}
+      className="flex items-center gap-2 rounded-[5px] px-3 py-2 mb-3"
+      style={{
+        background: 'linear-gradient(90deg, rgba(0,72,244,0.12) 0%, rgba(0,72,244,0.04) 100%)',
+        borderLeft: '3px solid #0048F4',
+      }}
     >
-      <div className="w-1 h-4 rounded-sm shrink-0" style={{ backgroundColor: '#0048F4' }} />
       <h3
-        className="text-[12.5px] uppercase font-extrabold tracking-wide"
-        style={{ color: '#0048F4' }}
+        className="text-[13px] uppercase font-extrabold tracking-widest"
+        style={{ color: '#0048F4', letterSpacing: '0.08em' }}
       >
         {title}
       </h3>
+    </div>
+  );
+}
+
+// ── Assignee role manager ────────────────────────────────────────────────────
+function AssigneeManager({
+  roles,
+  onChange,
+}: {
+  roles: AssigneeRole[];
+  onChange: (roles: AssigneeRole[]) => void;
+}) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState('');
+  const [editColor, setEditColor] = useState('');
+  const [addingNew, setAddingNew] = useState(false);
+  const [newLabel, setNewLabel] = useState('');
+  const [newColor, setNewColor] = useState('#4472C4');
+
+  const startEdit = (role: AssigneeRole) => {
+    setEditingId(role.id);
+    setEditLabel(role.label);
+    setEditColor(role.color);
+  };
+
+  const saveEdit = () => {
+    if (!editingId) return;
+    onChange(roles.map(r => r.id === editingId ? { ...r, label: editLabel.trim() || r.label, color: editColor } : r));
+    setEditingId(null);
+  };
+
+  const removeRole = (id: string) => {
+    onChange(roles.filter(r => r.id !== id));
+  };
+
+  const addRole = () => {
+    const trimmed = newLabel.trim();
+    if (!trimmed) return;
+    const id = `custom-${Date.now()}`;
+    onChange([...roles, { id, label: trimmed, color: newColor }]);
+    setNewLabel('');
+    setNewColor('#4472C4');
+    setAddingNew(false);
+  };
+
+  return (
+    <div className="space-y-1.5">
+      {roles.map((role) => (
+        <div key={role.id} className="flex items-center gap-1.5 bg-white border border-border/70 rounded-[4px] px-2 py-1.5 shadow-sm">
+          {editingId === role.id ? (
+            <>
+              {/* Color picker */}
+              <div className="relative shrink-0">
+                <input
+                  type="color"
+                  value={editColor}
+                  onChange={e => setEditColor(e.target.value)}
+                  className="w-6 h-6 rounded cursor-pointer border-0 p-0 bg-transparent"
+                  title="Цвет"
+                />
+              </div>
+              <Input
+                value={editLabel}
+                onChange={e => setEditLabel(e.target.value)}
+                className="h-6 text-[10px] flex-1 min-w-0"
+                onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null); }}
+                autoFocus
+              />
+              <button onClick={saveEdit} className="p-1 text-green-600 hover:text-green-700 shrink-0">
+                <Check className="w-3 h-3" />
+              </button>
+              <button onClick={() => setEditingId(null)} className="p-1 text-muted-foreground hover:text-foreground shrink-0">
+                <X className="w-3 h-3" />
+              </button>
+            </>
+          ) : (
+            <>
+              <div
+                className="w-4 h-4 rounded-[3px] shrink-0 flex items-center justify-center text-white font-bold"
+                style={{ backgroundColor: role.color, fontSize: '7px' }}
+              >
+                {role.label.substring(0, 2).toUpperCase()}
+              </div>
+              <span className="text-[11px] font-medium flex-1 truncate">{role.label}</span>
+              <button onClick={() => startEdit(role)} className="p-1 text-muted-foreground hover:text-[#0048F4] shrink-0">
+                <Pencil className="w-3 h-3" />
+              </button>
+              <button onClick={() => removeRole(role.id)} className="p-1 text-muted-foreground hover:text-destructive shrink-0">
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </>
+          )}
+        </div>
+      ))}
+
+      {addingNew ? (
+        <div className="flex items-center gap-1.5 bg-white border border-[#0048F4]/30 rounded-[4px] px-2 py-1.5 shadow-sm">
+          <input
+            type="color"
+            value={newColor}
+            onChange={e => setNewColor(e.target.value)}
+            className="w-6 h-6 rounded cursor-pointer border-0 p-0 bg-transparent shrink-0"
+            title="Цвет"
+          />
+          <Input
+            placeholder="Название роли"
+            value={newLabel}
+            onChange={e => setNewLabel(e.target.value)}
+            className="h-6 text-[10px] flex-1 min-w-0"
+            onKeyDown={e => { if (e.key === 'Enter') addRole(); if (e.key === 'Escape') setAddingNew(false); }}
+            autoFocus
+          />
+          <button onClick={addRole} className="p-1 text-green-600 hover:text-green-700 shrink-0">
+            <Check className="w-3 h-3" />
+          </button>
+          <button onClick={() => setAddingNew(false)} className="p-1 text-muted-foreground hover:text-foreground shrink-0">
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setAddingNew(true)}
+          className="w-full flex items-center justify-center gap-1 h-7 text-[10px] text-[#0048F4] border border-dashed border-[#0048F4]/40 rounded-[4px] hover:bg-[#0048F4]/5 transition-colors font-medium"
+        >
+          <Plus className="w-3 h-3" /> Добавить роль
+        </button>
+      )}
+
+      {/* Color presets row */}
+      {(addingNew || editingId) && (
+        <div className="flex flex-wrap gap-1 px-1">
+          {PRESET_COLORS.map(c => (
+            <button
+              key={c}
+              onClick={() => { if (editingId) setEditColor(c); else setNewColor(c); }}
+              className="w-4 h-4 rounded-[2px] border border-border/50 hover:scale-110 transition-transform"
+              style={{ backgroundColor: c }}
+              title={c}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -111,9 +279,11 @@ export default function RoadmapForm({
   implementationData,
   currentProjectId,
   hiddenModes,
+  assigneeRoles,
   onModeChange,
   onPhaseDataChange,
   onImplementationDataChange,
+  onAssigneeRolesChange,
   onReset,
   onExport,
   onExportPptx,
@@ -128,6 +298,7 @@ export default function RoadmapForm({
   const [openSwimLanes, setOpenSwimLanes] = useState<Record<string, boolean>>(
     () => Object.fromEntries(implementationData.swimlanes.map(s => [s.id, false]))
   );
+  const [showAssigneeManager, setShowAssigneeManager] = useState(false);
 
   const data = mode === 'phase' ? phaseData : implementationData;
 
@@ -298,7 +469,7 @@ export default function RoadmapForm({
           </Button>
         </div>
 
-        {/* Tabs — По потокам first, with per-tab hide (×) buttons */}
+        {/* Tabs */}
         {(() => {
           const allModes: { value: RoadmapMode; label: string }[] = [
             { value: 'implementation', label: 'По потокам' },
@@ -364,12 +535,12 @@ export default function RoadmapForm({
 
       {/* Form Content */}
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-5">
+        <div className="p-4 space-y-0">
           
-          {/* Общие настройки */}
-          <div>
+          {/* ── ОСНОВНОЕ ─────────────────────────────────────────────────────── */}
+          <div className="space-y-3 pb-4">
             <SectionHeader title="Основное" />
-            <div className="space-y-3">
+            <div className="space-y-3 px-0.5">
               <div className="space-y-1">
                 <Label className="text-[10px] text-muted-foreground font-medium">Название проекта</Label>
                 <Input
@@ -417,19 +588,55 @@ export default function RoadmapForm({
                   </Select>
                 </div>
               )}
+
+              {/* ── Исполнители (роли) ──────────────────────────────────────── */}
+              <div className="space-y-1.5">
+                <button
+                  onClick={() => setShowAssigneeManager(v => !v)}
+                  className="flex items-center justify-between w-full text-[10px] text-muted-foreground font-medium hover:text-foreground transition-colors group"
+                >
+                  <span>Роли исполнителей</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] text-[#0048F4] group-hover:underline">
+                      {showAssigneeManager ? 'скрыть' : 'управлять'}
+                    </span>
+                    <ChevronDown className={`w-3 h-3 text-[#0048F4] transition-transform ${showAssigneeManager ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+
+                {/* Mini preview badges */}
+                {!showAssigneeManager && (
+                  <div className="flex flex-wrap gap-1">
+                    {assigneeRoles.map(role => (
+                      <div
+                        key={role.id}
+                        className="px-1.5 py-0.5 rounded-[3px] text-white font-bold text-[9px] leading-none"
+                        style={{ backgroundColor: role.color }}
+                      >
+                        {role.label.substring(0, 2).toUpperCase()}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {showAssigneeManager && (
+                  <AssigneeManager roles={assigneeRoles} onChange={onAssigneeRolesChange} />
+                )}
+              </div>
             </div>
           </div>
 
-          <Separator className="bg-border" />
+          {/* ── Separator ──────────────────────────────────────────────────────── */}
+          <div className="h-px bg-gradient-to-r from-[#0048F4]/20 via-border to-[#0048F4]/10 my-1" />
 
           {/* Mode specific structures */}
           {mode === 'phase' ? (
             <>
-              {/* Phases */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
+              {/* ── ЭТАПЫ ────────────────────────────────────────────────────── */}
+              <div className="pt-4 pb-3 space-y-2">
+                <div className="flex items-center justify-between">
                   <SectionHeader title="Этапы" />
-                  <Button variant="ghost" size="sm" onClick={addPhase} className="h-5 px-1.5 text-[10px] text-[#0048F4]">
+                  <Button variant="ghost" size="sm" onClick={addPhase} className="h-5 px-1.5 text-[10px] text-[#0048F4] -mt-3 mr-0.5">
                     <Plus className="w-2.5 h-2.5 mr-0.5" /> Добавить
                   </Button>
                 </div>
@@ -521,7 +728,11 @@ export default function RoadmapForm({
                                       </div>
 
                                       <StatusToggle value={item.status} onChange={(status) => updateSubItem(phase.id, item.id, { status })} />
-                                      <AssigneeToggle values={item.assignees || []} onChange={(assignees) => updateSubItem(phase.id, item.id, { assignees })} />
+                                      <AssigneeToggle
+                                        values={item.assignees || []}
+                                        onChange={(assignees) => updateSubItem(phase.id, item.id, { assignees })}
+                                        roles={assigneeRoles}
+                                      />
                                     </div>
                                   ))}
                                 </div>
@@ -535,13 +746,13 @@ export default function RoadmapForm({
                 </div>
               </div>
 
-              <Separator className="bg-border" />
+              <div className="h-px bg-gradient-to-r from-[#0048F4]/20 via-border to-[#0048F4]/10 my-1" />
 
-              {/* Milestones (Phase) */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
+              {/* ── ВЕХИ (Phase) ─────────────────────────────────────────────── */}
+              <div className="pt-4 pb-3">
+                <div className="flex items-center justify-between">
                   <SectionHeader title="Вехи" />
-                  <Button variant="ghost" size="sm" onClick={addPhaseMilestone} className="h-5 px-1.5 text-[10px] text-[#0048F4]">
+                  <Button variant="ghost" size="sm" onClick={addPhaseMilestone} className="h-5 px-1.5 text-[10px] text-[#0048F4] -mt-3 mr-0.5">
                     <Plus className="w-2.5 h-2.5 mr-0.5" /> Добавить
                   </Button>
                 </div>
@@ -581,11 +792,11 @@ export default function RoadmapForm({
             </>
           ) : (
             <>
-              {/* Swimlanes */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
+              {/* ── ПОТОКИ РАБОТ ─────────────────────────────────────────────── */}
+              <div className="pt-4 pb-3 space-y-2">
+                <div className="flex items-center justify-between">
                   <SectionHeader title="Потоки работ" />
-                  <Button variant="ghost" size="sm" onClick={addSwimlane} className="h-5 px-1.5 text-[10px] text-[#0048F4]">
+                  <Button variant="ghost" size="sm" onClick={addSwimlane} className="h-5 px-1.5 text-[10px] text-[#0048F4] -mt-3 mr-0.5">
                     <Plus className="w-2.5 h-2.5 mr-0.5" /> Добавить
                   </Button>
                 </div>
@@ -596,10 +807,12 @@ export default function RoadmapForm({
                     return (
                       <Collapsible key={swimlane.id} open={openSwimLanes[swimlane.id]} onOpenChange={(open) => setOpenSwimLanes({ ...openSwimLanes, [swimlane.id]: open })}>
                         <div className="border border-border rounded-[4px] bg-white overflow-hidden shadow-sm">
-                          <div className="flex items-center">
+                          <div
+                            className="flex items-center"
+                            style={{ borderLeft: `3px solid ${swimlaneColor}` }}
+                          >
                             <CollapsibleTrigger className="flex-1 flex items-center justify-between px-2 py-2 hover:bg-muted/30 group">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <div className="w-1.5 h-3 rounded-full shrink-0" style={{ backgroundColor: swimlaneColor }} />
                                 <span className="text-[11px] font-bold truncate text-foreground group-hover:text-[#0048F4] transition-colors">
                                   {swimlane.name}
                                 </span>
@@ -671,7 +884,11 @@ export default function RoadmapForm({
                                       </div>
 
                                       <StatusToggle value={task.status} onChange={(status) => updateTask(swimlane.id, task.id, { status })} />
-                                      <AssigneeToggle values={task.assignees || []} onChange={(assignees) => updateTask(swimlane.id, task.id, { assignees })} />
+                                      <AssigneeToggle
+                                        values={task.assignees || []}
+                                        onChange={(assignees) => updateTask(swimlane.id, task.id, { assignees })}
+                                        roles={assigneeRoles}
+                                      />
                                     </div>
                                   ))}
                                 </div>
@@ -685,13 +902,13 @@ export default function RoadmapForm({
                 </div>
               </div>
 
-              <Separator className="bg-border" />
+              <div className="h-px bg-gradient-to-r from-[#0048F4]/20 via-border to-[#0048F4]/10 my-1" />
 
-              {/* Milestones (Implementation) */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
+              {/* ── ВЕХИ (Implementation) ────────────────────────────────────── */}
+              <div className="pt-4 pb-3">
+                <div className="flex items-center justify-between">
                   <SectionHeader title="Вехи" />
-                  <Button variant="ghost" size="sm" onClick={addImplMilestone} className="h-5 px-1.5 text-[10px] text-[#0048F4]">
+                  <Button variant="ghost" size="sm" onClick={addImplMilestone} className="h-5 px-1.5 text-[10px] text-[#0048F4] -mt-3 mr-0.5">
                     <Plus className="w-2.5 h-2.5 mr-0.5" /> Добавить
                   </Button>
                 </div>
@@ -721,6 +938,8 @@ export default function RoadmapForm({
             </>
           )}
 
+          {/* Bottom padding */}
+          <div className="h-4" />
         </div>
       </ScrollArea>
     </div>

@@ -1,6 +1,6 @@
 import pptxgen from 'pptxgenjs';
-import { PhaseRoadmapData, ImplementationRoadmapData, Phase, Assignee } from '@/types/roadmap';
-import { getStatusStyle, ASSIGNEE_LABELS, ASSIGNEE_COLORS } from '@/lib/status';
+import { PhaseRoadmapData, ImplementationRoadmapData, Phase, AssigneeRole } from '@/types/roadmap';
+import { getStatusStyle, getAssigneeLabel, getAssigneeColor } from '@/lib/status';
 
 // ── Corporate slide layout ────────────────────────────────────────────────────
 const SLIDE_W = 12.598;
@@ -16,15 +16,16 @@ const TITLE_Y  = 0.28;
 const TITLE_H  = 0.62;
 const ACCENT_Y = TITLE_Y + TITLE_H;
 const CONTENT_Y = ACCENT_Y + 0.15;
-const CONTENT_H = SLIDE_H - CONTENT_Y - MB; // ≈ 5.9"
+
+const LEGEND_H = 0.22; // height reserved for assignee legend at bottom
+const CONTENT_H = SLIDE_H - CONTENT_Y - MB - LEGEND_H - 0.08; // leave room for legend
 
 const TITLE_FONT = 'Times New Roman';
 const TITLE_SIZE = 28;
 const BODY_FONT  = 'Arial';
 const BODY_SIZE  = 10;
 
-// Cell text (task/item descriptions) — kept smaller than headers/phase-names/months
-// so that more content fits without visually overflowing the cell.
+// Cell text (task/item descriptions) — 8pt to fit more content
 const CELL_TEXT_SIZE = 8;
 
 const CORP_NAVY = '44546A';
@@ -34,75 +35,29 @@ const PHASE_COLORS = ['0048F4', '4472C4', 'ED7D31', '70AD47', 'FFC000', '5B9BD5'
 // Minimum readable row height — never place shapes below this height
 const MIN_ROW_H = 0.18; // inches
 
-// ── Auto-growing cells ───────────────────────────────────────────────────────
-// pptxgenjs doesn't measure text, so we estimate wrapped-line count from an
-// average Arial character width. This lets a row grow taller when its text
-// would otherwise overflow the box, instead of clipping/visually spilling out.
+// ── Auto-growing cells ────────────────────────────────────────────────────────
 function estimateWrappedLines(text: string, fontSizePt: number, boxWidthIn: number): number {
   if (!text) return 1;
-  const avgCharWidthIn = (fontSizePt / 72) * 0.52; // Arial average glyph width factor
-  const charsPerLine = Math.max(4, Math.floor(boxWidthIn / avgCharWidthIn));
+  // Average Arial glyph width factor (slightly conservative so cells grow rather than clip)
+  const avgCharWidthIn = (fontSizePt / 72) * 0.58;
+  const charsPerLine = Math.max(3, Math.floor(boxWidthIn / avgCharWidthIn));
   return Math.max(1, Math.ceil(text.length / charsPerLine));
 }
 
 function textBlockHeightIn(text: string, fontSizePt: number, boxWidthIn: number): number {
   const lines = estimateWrappedLines(text, fontSizePt, Math.max(boxWidthIn, 0.2));
-  const lineHeightIn = (fontSizePt / 72) * 1.3;
+  const lineHeightIn = (fontSizePt / 72) * 1.45; // generous line spacing
   return lines * lineHeightIn;
 }
 
-// ── Assignee badges ──────────────────────────────────────────────────────────
-// Renders assignees as small colored chips (matching the on-screen app look)
-// instead of appending "[Name, Name]" text, which used to stretch/overflow cells.
-const BADGE_H = 0.15;
-const BADGE_GAP = 0.035;
-const BADGE_FONT = 6;
-
-function badgeWidth(label: string): number {
-  return Math.max(0.28, label.length * (BADGE_FONT / 72) * 1.0 + 0.14);
-}
-
-function computeBadgeLayout(assignees: Assignee[], maxWidth: number): { rows: Assignee[][]; height: number } {
-  if (!assignees || assignees.length === 0) return { rows: [], height: 0 };
-  const rows: Assignee[][] = [[]];
-  let rowWidth = 0;
-  assignees.forEach((a) => {
-    const label = (ASSIGNEE_LABELS[a] || '??').substring(0, 2).toUpperCase();
-    const w = badgeWidth(label);
-    if (rowWidth + w > maxWidth && rows[rows.length - 1].length > 0) {
-      rows.push([]);
-      rowWidth = 0;
-    }
-    rows[rows.length - 1].push(a);
-    rowWidth += w + BADGE_GAP;
-  });
-  const height = rows.length * BADGE_H + (rows.length - 1) * BADGE_GAP;
-  return { rows, height };
-}
-
-function drawAssigneeBadges(slide: pptxgen.Slide, assignees: Assignee[], x: number, y: number, maxWidth: number) {
-  const { rows } = computeBadgeLayout(assignees, maxWidth);
-  let curY = y;
-  rows.forEach((rowAssignees) => {
-    let curX = x;
-    rowAssignees.forEach((a) => {
-      const label = (ASSIGNEE_LABELS[a] || '??').substring(0, 2).toUpperCase();
-      const w = badgeWidth(label);
-      slide.addShape('roundRect' as any, {
-        x: curX, y: curY, w, h: BADGE_H,
-        fill: { color: hex(ASSIGNEE_COLORS[a]) },
-        line: { color: hex(ASSIGNEE_COLORS[a]), pt: 0 },
-        rectRadius: 0.025,
-      });
-      slide.addText(label, {
-        x: curX, y: curY, w, h: BADGE_H,
-        fontFace: BODY_FONT, fontSize: BADGE_FONT, bold: true,
-        color: 'FFFFFF', align: 'center', valign: 'middle',
-      });
-      curX += w + BADGE_GAP;
-    });
-    curY += BADGE_H + BADGE_GAP;
-  });
+// ── Assignee inline text (compact, no badge shapes) ──────────────────────────
+// Renders assignees as a single short colored-text line at the bottom of a cell.
+// Uses 2-letter abbreviations separated by spaces so it fits on one line easily.
+function assigneeInlineText(assignees: string[], roles?: AssigneeRole[]): string {
+  if (!assignees || assignees.length === 0) return '';
+  return assignees
+    .map(a => getAssigneeLabel(a, roles).substring(0, 2).toUpperCase())
+    .join(' · ');
 }
 
 function setupLayout(prs: pptxgen) {
@@ -110,12 +65,9 @@ function setupLayout(prs: pptxgen) {
   prs.layout = 'CORP' as any;
 }
 
+// Title bar WITHOUT border lines (fix #6)
 function addTitleBar(slide: pptxgen.Slide, title: string) {
-  slide.addShape('rect' as any, {
-    x: ML, y: TITLE_Y, w: CW, h: TITLE_H,
-    fill: { color: 'FFFFFF' },
-    line: { color: 'DDDDDD', pt: 0.5 },
-  });
+  // No surrounding rect / no border — just the text and the blue accent line
   slide.addText(title, {
     x: ML + 0.15, y: TITLE_Y, w: CW - 0.3, h: TITLE_H,
     fontFace: TITLE_FONT, fontSize: TITLE_SIZE,
@@ -127,6 +79,63 @@ function addTitleBar(slide: pptxgen.Slide, title: string) {
   });
 }
 
+// Assignee legend row below the grid
+function addAssigneeLegend(
+  slide: pptxgen.Slide,
+  assigneeRoles: AssigneeRole[] | undefined,
+  legendY: number,
+) {
+  const roles = assigneeRoles && assigneeRoles.length > 0
+    ? assigneeRoles
+    : [
+        { id: 'pm',        label: 'ПМ',          color: '#0048F4' },
+        { id: 'analyst',   label: 'Аналитик',    color: '#4472C4' },
+        { id: 'developer', label: 'Разработчик', color: '#ED7D31' },
+        { id: 'tester',    label: 'Тестировщик', color: '#70AD47' },
+      ];
+
+  // Background strip
+  slide.addShape('rect' as any, {
+    x: ML, y: legendY, w: CW, h: LEGEND_H,
+    fill: { color: 'F8F8F8' }, line: { color: 'DDDDDD', pt: 0.5 },
+  });
+
+  const badgeW = 0.14;
+  const badgeH = 0.13;
+  const gapBetween = 0.12;
+  const textW = 0.85;
+  const itemW = badgeW + gapBetween + textW + 0.18;
+
+  let curX = ML + 0.2;
+  const midY = legendY + (LEGEND_H - badgeH) / 2;
+
+  roles.forEach((role) => {
+    if (curX + itemW > ML + CW - 0.1) return; // don't overflow slide
+
+    const colorHex = role.color.replace('#', '');
+    // Colored badge chip
+    slide.addShape('roundRect' as any, {
+      x: curX, y: midY, w: badgeW, h: badgeH,
+      fill: { color: colorHex }, line: { color: colorHex, pt: 0 },
+      rectRadius: 0.02,
+    });
+    // 2-letter abbreviation inside chip
+    slide.addText(role.label.substring(0, 2).toUpperCase(), {
+      x: curX, y: midY, w: badgeW, h: badgeH,
+      fontFace: BODY_FONT, fontSize: 5, bold: true,
+      color: 'FFFFFF', align: 'center', valign: 'middle',
+    });
+    // Full label next to chip
+    slide.addText(role.label, {
+      x: curX + badgeW + 0.05, y: legendY, w: textW, h: LEGEND_H,
+      fontFace: BODY_FONT, fontSize: BODY_SIZE - 2,
+      color: '333333', valign: 'middle',
+    });
+
+    curX += itemW;
+  });
+}
+
 /** Strip # and ensure valid 6-char hex; fall back to white */
 function hex(colorStr: string): string {
   const cleaned = colorStr.replace('#', '').trim();
@@ -135,22 +144,17 @@ function hex(colorStr: string): string {
 
 // ────────────────────────────────────────────────────────────────────────────
 // PHASE SLIDE PACKING
-// Strategy: fill each slide as full as possible (respecting MIN_ROW_H and
-// slide bounds), then put the remainder on the next slide — so early slides
-// are always full and the last slide has only what's left.
 // ────────────────────────────────────────────────────────────────────────────
 
 const PHASE_HEADER_H = 0.28;
-const PHASE_ROW_AREA = CONTENT_H - PHASE_HEADER_H; // rows-only height ≈ 5.3"
-const MAX_ROWS_PER_SLIDE = Math.floor(PHASE_ROW_AREA / MIN_ROW_H); // ≈ 29
+const PHASE_ROW_AREA = CONTENT_H - PHASE_HEADER_H;
+const MAX_ROWS_PER_SLIDE = Math.floor(PHASE_ROW_AREA / MIN_ROW_H);
 
 function packPhasesIntoSlides(phases: Phase[], requestedSlides: number): Phase[][] {
   if (requestedSlides <= 1 || phases.length === 0) return [phases];
 
   const phaseRowCounts = phases.map(p => Math.max(p.subItems.length, 1));
   const totalRows = phaseRowCounts.reduce((a, b) => a + b, 0);
-
-  // Target rows per slide: distribute evenly, but cap at physical maximum
   const targetRows = Math.min(
     Math.ceil(totalRows / requestedSlides),
     MAX_ROWS_PER_SLIDE,
@@ -176,14 +180,17 @@ function packPhasesIntoSlides(phases: Phase[], requestedSlides: number): Phase[]
     }
   });
   if (current.length > 0) groups.push(current);
-
   return groups;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 // PHASE ROADMAP (По этапам)
 // ════════════════════════════════════════════════════════════════════════════
-export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1): void {
+export function exportPhaseRoadmapToPptx(
+  data: PhaseRoadmapData,
+  slideCount = 1,
+  assigneeRoles?: AssigneeRole[],
+): void {
   const prs = new pptxgen();
   setupLayout(prs);
 
@@ -193,6 +200,9 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
   const COL_LABEL_W = 2.0;
   const GRID_W = CW - COL_LABEL_W;
   const periodW = GRID_W / Math.max(data.periods.length, 1);
+
+  const LEGEND_Y = SLIDE_H - MB - LEGEND_H;
+  const BOTTOM_LIMIT = LEGEND_Y - 0.05;
 
   slideGroups.forEach((slidePhases, slideIdx) => {
     if (slidePhases.length === 0) return;
@@ -207,7 +217,10 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
         : data.title,
     );
 
-    // ── Row height: auto-fit to available area, capped for readability ──────
+    // ── Assignee legend ──────────────────────────────────────────────────────
+    addAssigneeLegend(slide, assigneeRoles, LEGEND_Y);
+
+    // ── Row height: auto-fit to available area ────────────────────────────────
     const totalItemRows = slidePhases.reduce(
       (sum, p) => sum + Math.max(p.subItems.length, 1),
       0,
@@ -218,10 +231,8 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
     );
 
     const GRID_START_Y = CONTENT_Y;
-    // Hard bottom limit — no shape may cross this line
-    const BOTTOM_LIMIT = SLIDE_H - MB;
 
-    // ── ЭТАП header ─────────────────────────────────────────────────────────
+    // ── ЭТАП header ──────────────────────────────────────────────────────────
     slide.addShape('rect' as any, {
       x: ML, y: GRID_START_Y, w: COL_LABEL_W, h: PHASE_HEADER_H,
       fill: { color: CORP_NAVY }, line: { color: CORP_NAVY, pt: 0.5 },
@@ -231,7 +242,7 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
       fontFace: BODY_FONT, fontSize: BODY_SIZE, bold: true, color: 'FFFFFF',
     });
 
-    // ── Period headers ───────────────────────────────────────────────────────
+    // ── Period headers (черный жирный текст — fix #5) ────────────────────────
     data.periods.forEach((period, idx) => {
       const x = ML + COL_LABEL_W + idx * periodW;
       const isCurrent = idx === data.currentPosition;
@@ -244,7 +255,7 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
         x, y: GRID_START_Y, w: periodW, h: PHASE_HEADER_H,
         fontFace: BODY_FONT, fontSize: BODY_SIZE - 1,
         bold: true,
-        color: isCurrent ? 'CC6600' : '555555',
+        color: isCurrent ? 'CC6600' : '111111', // black text, fix #5
         align: 'center',
       });
       if (isCurrent) {
@@ -261,26 +272,25 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
     let currentY = GRID_START_Y + PHASE_HEADER_H;
 
     slidePhases.forEach((phase, phaseIdx) => {
-      // Safety: skip if we're already past the bottom margin
       if (currentY >= BOTTOM_LIMIT - MIN_ROW_H) return;
 
       const phaseColor = PHASE_COLORS[phaseIdx % PHASE_COLORS.length];
 
-      // Per-row heights: start from the uniform baseline (ROW_H) but let a row
-      // grow taller if its text/badges wouldn't fit at CELL_TEXT_SIZE — so the
-      // cell lengthens downward instead of the text overflowing it.
+      // Per-row heights: grow a row if text won't fit at CELL_TEXT_SIZE
       const rowHeights: number[] = phase.subItems.length
         ? phase.subItems.map((item) => {
             const spanW = periodW * Math.max(item.endPeriod - item.startPeriod, 1);
-            const innerW = Math.max(spanW - 0.08, 0.2);
+            const innerW = Math.max(spanW - 0.10, 0.2);
             const descH = textBlockHeightIn(item.description, CELL_TEXT_SIZE, innerW);
-            const badgeLayout = computeBadgeLayout(item.assignees || [], innerW);
-            const neededH = 0.06 + descH + (badgeLayout.height > 0 ? badgeLayout.height + 0.03 : 0);
+            // Assignee inline text: one extra line at 6pt
+            const assigneeLineH = (item.assignees && item.assignees.length > 0)
+              ? (6 / 72) * 1.4 + 0.03
+              : 0;
+            const neededH = 0.07 + descH + assigneeLineH;
             return Math.max(ROW_H, neededH, MIN_ROW_H);
           })
         : [ROW_H];
 
-      // Clamp phase block so it never bleeds past BOTTOM_LIMIT
       const naturalPhaseH = rowHeights.reduce((a, b) => a + b, 0);
       const phaseH = Math.min(naturalPhaseH, BOTTOM_LIMIT - currentY);
 
@@ -289,7 +299,6 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
         x: ML, y: currentY, w: COL_LABEL_W, h: phaseH,
         fill: { color: 'FFFFFF' }, line: { color: 'CCCCCC', pt: 0.5 },
       });
-      // Colored left border stripe
       slide.addShape('rect' as any, {
         x: ML, y: currentY, w: 0.05, h: phaseH,
         fill: { color: phaseColor }, line: { color: phaseColor, pt: 0 },
@@ -300,7 +309,6 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
         bold: true, color: '222222', valign: 'middle', wrap: true,
       });
 
-      // Sub-items grid
       if (phase.subItems.length === 0) {
         data.periods.forEach((_, periodIdx) => {
           const x = ML + COL_LABEL_W + periodIdx * periodW;
@@ -314,9 +322,11 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
         let itemY = currentY;
         phase.subItems.forEach((item, itemIdx) => {
           const naturalRowH = rowHeights[itemIdx];
-          if (itemY >= BOTTOM_LIMIT) return; // clip rows that overflow the slide
+          if (itemY >= BOTTOM_LIMIT) return;
           const rowH = Math.min(naturalRowH, BOTTOM_LIMIT - itemY);
           const statusStyle = getStatusStyle(item.status);
+          const assignees = item.assignees || [];
+          const assigneeText = assigneeInlineText(assignees, assigneeRoles);
 
           data.periods.forEach((_, periodIdx) => {
             const x = ML + COL_LABEL_W + periodIdx * periodW;
@@ -331,28 +341,42 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
 
             if (isStart) {
               const spanW = periodW * Math.max(item.endPeriod - item.startPeriod, 1);
-              const innerW = spanW - 0.06;
-              const assignees = item.assignees || [];
-              const badgeLayout = computeBadgeLayout(assignees, innerW);
-              const descH = rowH - (badgeLayout.height > 0 ? badgeLayout.height + 0.05 : 0.02);
+              const innerW = spanW - 0.08;
 
-              slide.addText(item.description, {
-                x: x + 0.03, y: itemY + 0.01,
-                w: innerW, h: Math.max(descH, 0.12),
-                fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
-                color: hex(statusStyle.fg),
-                wrap: true, valign: badgeLayout.height > 0 ? 'top' : 'middle',
-              });
+              if (assigneeText) {
+                // Description text (slightly reduced height to leave room for assignee line)
+                const assigneeLineH = (6 / 72) * 1.5 + 0.02;
+                const descAvailH = Math.max(rowH - assigneeLineH - 0.06, 0.10);
 
-              if (badgeLayout.height > 0) {
-                drawAssigneeBadges(
-                  slide, assignees,
-                  x + 0.03, itemY + rowH - badgeLayout.height - 0.02,
-                  innerW,
-                );
+                slide.addText(item.description, {
+                  x: x + 0.04, y: itemY + 0.02,
+                  w: innerW, h: descAvailH,
+                  fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
+                  color: hex(statusStyle.fg),
+                  wrap: true, valign: 'top',
+                });
+
+                // Assignee line — colored abbreviations in small text
+                slide.addText(assigneeText, {
+                  x: x + 0.04, y: itemY + rowH - assigneeLineH - 0.02,
+                  w: innerW, h: assigneeLineH + 0.02,
+                  fontFace: BODY_FONT, fontSize: 6,
+                  color: hex(statusStyle.fg), bold: true,
+                  wrap: false, valign: 'bottom',
+                });
+              } else {
+                slide.addText(item.description, {
+                  x: x + 0.04, y: itemY + 0.02,
+                  w: innerW, h: Math.max(rowH - 0.04, 0.12),
+                  fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
+                  color: hex(statusStyle.fg),
+                  wrap: true, valign: 'middle',
+                });
               }
             }
           });
+
+          itemY += rowH;
         });
       }
 
@@ -370,7 +394,7 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
 const IMPL_MILESTONE_H = 0.70;
 const IMPL_HEADER_H   = 0.26;
 const IMPL_ROW_AREA   = CONTENT_H - IMPL_MILESTONE_H - IMPL_HEADER_H;
-const MAX_LANES_PER_SLIDE = Math.floor(IMPL_ROW_AREA / 0.32); // ≈ 16 lanes
+const MAX_LANES_PER_SLIDE = Math.floor(IMPL_ROW_AREA / 0.32);
 
 function packLanesIntoSlides<T>(lanes: T[], requestedSlides: number): T[][] {
   if (requestedSlides <= 1 || lanes.length === 0) return [lanes];
@@ -398,6 +422,7 @@ function packLanesIntoSlides<T>(lanes: T[], requestedSlides: number): T[][] {
 export function exportImplementationRoadmapToPptx(
   data: ImplementationRoadmapData,
   slideCount = 1,
+  assigneeRoles?: AssigneeRole[],
 ): void {
   const prs = new pptxgen();
   setupLayout(prs);
@@ -408,7 +433,9 @@ export function exportImplementationRoadmapToPptx(
   const LABEL_W  = 2.0;
   const GRID_W   = CW - LABEL_W;
   const periodW  = GRID_W / Math.max(data.periods.length, 1);
-  const BOTTOM_LIMIT = SLIDE_H - MB;
+
+  const LEGEND_Y = SLIDE_H - MB - LEGEND_H;
+  const BOTTOM_LIMIT = LEGEND_Y - 0.05;
 
   slideGroups.forEach((slideLanes, slideIdx) => {
     if (slideLanes.length === 0) return;
@@ -423,7 +450,10 @@ export function exportImplementationRoadmapToPptx(
         : data.title,
     );
 
-    // ── Auto-fit lane heights ────────────────────────────────────────────────
+    // ── Assignee legend ──────────────────────────────────────────────────────
+    addAssigneeLegend(slide, assigneeRoles, LEGEND_Y);
+
+    // ── Auto-fit lane heights ─────────────────────────────────────────────────
     const maxRows = Math.max(
       1,
       ...slideLanes.map((sl) => {
@@ -450,7 +480,7 @@ export function exportImplementationRoadmapToPptx(
     const HEADER_Y = MILE_Y + IMPL_MILESTONE_H;
     let laneY      = HEADER_Y + IMPL_HEADER_H;
 
-    // ── Milestone row ────────────────────────────────────────────────────────
+    // ── Milestone row ─────────────────────────────────────────────────────────
     slide.addShape('line' as any, {
       x: ML + LABEL_W, y: MILE_Y + IMPL_MILESTONE_H - 0.05,
       w: GRID_W, h: 0,
@@ -473,7 +503,7 @@ export function exportImplementationRoadmapToPptx(
       });
     });
 
-    // ── Period header ────────────────────────────────────────────────────────
+    // ── Period header (черный текст — fix #5) ─────────────────────────────────
     slide.addShape('rect' as any, {
       x: ML, y: HEADER_Y, w: LABEL_W, h: IMPL_HEADER_H,
       fill: { color: CORP_NAVY }, line: { color: CORP_NAVY, pt: 0.5 },
@@ -487,11 +517,13 @@ export function exportImplementationRoadmapToPptx(
       slide.addText(period, {
         x, y: HEADER_Y, w: periodW, h: IMPL_HEADER_H,
         fontFace: BODY_FONT, fontSize: BODY_SIZE - 1,
-        color: '666666', align: 'center',
+        bold: true,
+        color: '111111', // black text, fix #5
+        align: 'center',
       });
     });
 
-    // ── Swimlanes ────────────────────────────────────────────────────────────
+    // ── Swimlanes ─────────────────────────────────────────────────────────────
     slideLanes.forEach((swimlane, swimIdx) => {
       if (laneY >= BOTTOM_LIMIT - 0.1) return;
 
@@ -509,8 +541,8 @@ export function exportImplementationRoadmapToPptx(
         }
         if (!placed) taskRows.push([task]);
       }
-      // Per-row heights: baseline TASK_ROW_H, but grow a row if any task in it
-      // needs more room for its (wrapped) text + assignee badges at 8pt.
+
+      // Per-row heights: grow a row if text (or assignee line) needs more space
       const rowHeights: number[] = taskRows.length
         ? taskRows.map((rowTasks) => {
             let maxNeeded = TASK_ROW_H;
@@ -518,8 +550,9 @@ export function exportImplementationRoadmapToPptx(
               const w = Math.max(task.span * periodW - 0.04, 0.1);
               const innerW = Math.max(w - 0.08, 0.2);
               const descH = textBlockHeightIn(task.description, CELL_TEXT_SIZE, innerW);
-              const badgeLayout = computeBadgeLayout(task.assignees || [], innerW);
-              const needed = 0.08 + descH + (badgeLayout.height > 0 ? badgeLayout.height + 0.03 : 0);
+              const hasAssignees = task.assignees && task.assignees.length > 0;
+              const assigneeLineH = hasAssignees ? (6 / 72) * 1.4 + 0.03 : 0;
+              const needed = 0.08 + descH + assigneeLineH;
               maxNeeded = Math.max(maxNeeded, needed);
             });
             return maxNeeded;
@@ -567,8 +600,7 @@ export function exportImplementationRoadmapToPptx(
           const w = Math.max(task.span * periodW - 0.04, 0.1);
           const innerW = w - 0.08;
           const assignees = task.assignees || [];
-          const badgeLayout = computeBadgeLayout(assignees, innerW);
-          const descH = taskH - (badgeLayout.height > 0 ? badgeLayout.height + 0.05 : 0.02);
+          const assigneeText = assigneeInlineText(assignees, assigneeRoles);
 
           slide.addShape('rect' as any, {
             x, y: taskY, w, h: taskH,
@@ -576,19 +608,31 @@ export function exportImplementationRoadmapToPptx(
             line: { color: hex(statusStyle.border), pt: 1 },
             rectRadius: 0.03,
           });
-          slide.addText(task.description, {
-            x: x + 0.04, y: taskY + 0.01, w: innerW, h: Math.max(descH, 0.12),
-            fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
-            color: hex(statusStyle.fg),
-            wrap: true, valign: badgeLayout.height > 0 ? 'top' : 'middle',
-          });
 
-          if (badgeLayout.height > 0) {
-            drawAssigneeBadges(
-              slide, assignees,
-              x + 0.04, taskY + taskH - badgeLayout.height - 0.02,
-              innerW,
-            );
+          if (assigneeText) {
+            const assigneeLineH = (6 / 72) * 1.5 + 0.02;
+            const descAvailH = Math.max(taskH - assigneeLineH - 0.04, 0.10);
+
+            slide.addText(task.description, {
+              x: x + 0.04, y: taskY + 0.01, w: innerW, h: descAvailH,
+              fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
+              color: hex(statusStyle.fg),
+              wrap: true, valign: 'top',
+            });
+            slide.addText(assigneeText, {
+              x: x + 0.04, y: taskY + taskH - assigneeLineH - 0.01,
+              w: innerW, h: assigneeLineH + 0.01,
+              fontFace: BODY_FONT, fontSize: 6, bold: true,
+              color: hex(statusStyle.fg),
+              wrap: false, valign: 'bottom',
+            });
+          } else {
+            slide.addText(task.description, {
+              x: x + 0.04, y: taskY + 0.01, w: innerW, h: Math.max(taskH - 0.02, 0.12),
+              fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
+              color: hex(statusStyle.fg),
+              wrap: true, valign: 'middle',
+            });
           }
         });
 
