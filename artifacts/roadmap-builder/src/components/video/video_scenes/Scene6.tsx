@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { m, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 export function Scene6() {
@@ -62,7 +62,7 @@ export function Scene6() {
           <motion.div
             key={i}
             className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center"
-            style={{ left: \`\${m.x}%\` }}
+            style={{ left: `\${m.x}%` }}
             initial={{ opacity: 0, scale: 0, y: "-50%" }}
             animate={phase >= 3 ? { opacity: 1, scale: 1, y: "-50%" } : { opacity: 0, scale: 0, y: "-50%" }}
             transition={{ 
@@ -75,15 +75,15 @@ export function Scene6() {
             {/* Flag line */}
             <div className="w-[2px] h-16 bg-border absolute bottom-full mb-2 origin-bottom scale-y-0"
               style={{
-                animation: phase >= 3 ? \`scaleUp 0.3s ease-out forwards \${m.delay + 0.3}s\` : "none"
+                animation: phase >= 3 ? `scaleUp 0.3s ease-out forwards \${m.delay + 0.3}s` : "none"
               }}
             />
             {/* Diamond */}
-            <div className={\`w-8 h-8 rotate-45 border-4 border-white shadow-md \${m.bg} relative z-10 flex items-center justify-center\`} />
+            <div className={`w-8 h-8 rotate-45 border-4 border-white shadow-md \${m.bg} relative z-10 flex items-center justify-center`} />
             
             {/* Label */}
             <motion.div 
-              className={\`absolute bottom-[calc(100%+80px)] whitespace-nowrap font-bold text-2xl \${m.color}\`}
+              className={`absolute bottom-[calc(100%+80px)] whitespace-nowrap font-bold text-2xl \${m.color}`}
               initial={{ opacity: 0, y: 10 }}
               animate={phase >= 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
               transition={{ delay: m.delay + 0.5 }}

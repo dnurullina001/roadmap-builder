@@ -37,7 +37,7 @@ export function Scene2() {
         {cards.map((card, i) => (
           <motion.div
             key={i}
-            className={\`absolute w-64 h-24 rounded-2xl border border-white/20 backdrop-blur-md \${card.color}\`}
+            className={`absolute w-64 h-24 rounded-2xl border border-white/20 backdrop-blur-md \${card.color}`}
             initial={{ 
               x: card.start.x * 2, 
               y: card.start.y * 2, 

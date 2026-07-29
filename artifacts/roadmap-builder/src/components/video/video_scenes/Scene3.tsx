@@ -105,10 +105,10 @@ export function Scene3() {
 function TaskCard({ title, start, width, color, delay }: { title: string, start: number, width: number, color: string, delay: number }) {
   return (
     <motion.div
-      className={\`absolute top-4 bottom-4 rounded-xl shadow-sm flex items-center px-4 font-medium \${color}\`}
+      className={`absolute top-4 bottom-4 rounded-xl shadow-sm flex items-center px-4 font-medium \${color}`}
       style={{
-        left: \`\${start * 25}%\`,
-        width: \`\${width * 25}%\`,
+        left: `\${start * 25}%`,
+        width: `\${width * 25}%`,
       }}
       initial={{ scale: 0.8, opacity: 0, y: 10 }}
       animate={{ scale: 1, opacity: 1, y: 0 }}

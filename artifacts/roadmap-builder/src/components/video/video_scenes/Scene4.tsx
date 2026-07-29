@@ -108,7 +108,7 @@ export function Scene4() {
                   <div key={colIdx} className="flex-1 border-r border-border p-3">
                     {phase >= 3 && matrix[i][colIdx] !== 0 && (
                       <motion.div
-                        className={\`w-full h-full rounded-lg border flex items-center justify-center font-semibold text-sm \${getStatusColor(matrix[i][colIdx])}\`}
+                        className={`w-full h-full rounded-lg border flex items-center justify-center font-semibold text-sm \${getStatusColor(matrix[i][colIdx])}`}
                         initial={{ scale: 0.5, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ 

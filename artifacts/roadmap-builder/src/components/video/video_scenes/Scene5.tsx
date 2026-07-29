@@ -63,7 +63,7 @@ export function Scene5() {
           {assignees.map((assignee, i) => (
             <motion.div
               key={i}
-              className={\`flex flex-col items-center justify-center p-4 rounded-xl border flex-1 \${assignee.color}\`}
+              className={`flex flex-col items-center justify-center p-4 rounded-xl border flex-1 \${assignee.color}`}
               initial={{ opacity: 0, y: 20, scale: 0.8 }}
               animate={phase >= 3 ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 20, scale: 0.8 }}
               transition={{ 
@@ -98,8 +98,8 @@ export function Scene5() {
       {/* Floating abstract avatars in background */}
       {assignees.map((assignee, i) => (
         <motion.div
-          key={\`bg-\${i}\`}
-          className={\`absolute w-24 h-24 rounded-full filter blur-[2px] opacity-20 flex items-center justify-center text-4xl font-bold \${assignee.color}\`}
+          key={`bg-\${i}`}
+          className={`absolute w-24 h-24 rounded-full filter blur-[2px] opacity-20 flex items-center justify-center text-4xl font-bold \${assignee.color}`}
           initial={{ 
             x: i % 2 === 0 ? "-30vw" : "30vw", 
             y: i < 2 ? "-20vh" : "20vh",
