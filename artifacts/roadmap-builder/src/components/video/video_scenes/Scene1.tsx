@@ -5,91 +5,87 @@ export function Scene1() {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const timers = [
-      setTimeout(() => setPhase(1), 400),
-      setTimeout(() => setPhase(2), 900),
-      setTimeout(() => setPhase(3), 1500),
-      setTimeout(() => setPhase(4), 2100),
-    ];
-    return () => timers.forEach((t) => clearTimeout(t));
+    const t1 = setTimeout(() => setPhase(1), 500);
+    const t2 = setTimeout(() => setPhase(2), 1500);
+    const t3 = setTimeout(() => setPhase(3), 3500);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
+
+  const slogan = "Стратегия. Ясность. Движение.";
+  const sloganWords = slogan.split(" ");
 
   return (
     <motion.div
-      className="absolute inset-0 flex flex-col items-center justify-center gap-0"
+      className="w-full h-full flex flex-col items-center justify-center bg-transparent text-white"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.4 }}
+      exit={{ scale: 1.5, opacity: 0, filter: "blur(20px)" }}
+      transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
     >
-      {/* Logo icon */}
-      <motion.div
-        className="mb-4"
-        initial={{ scale: 0, rotate: -180 }}
-        animate={phase >= 1 ? { scale: 1, rotate: 0 } : { scale: 0, rotate: -180 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-      >
-        <svg width="100" height="100" viewBox="0 0 120 120" fill="none">
-          <path
-            d="M30 20 L60 80 L90 20"
-            stroke="#0048F4"
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
+      <div className="relative flex flex-col items-center z-10">
+        
+        {/* LOGO ICON */}
+        <motion.div
+          className="w-32 h-32 rounded-3xl bg-primary flex items-center justify-center font-display font-bold text-7xl text-white shadow-[0_0_80px_rgba(0,72,244,0.6)] relative overflow-hidden"
+          initial={{ scale: 0, rotate: -20, opacity: 0 }}
+          animate={phase >= 1 ? { scale: 1, rotate: 0, opacity: 1 } : { scale: 0, rotate: -20, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 200, damping: 20 }}
+        >
+          <motion.div 
+            className="absolute inset-0 bg-white/20 skew-x-12"
+            initial={{ x: "-150%" }}
+            animate={phase >= 1 ? { x: "150%" } : { x: "-150%" }}
+            transition={{ delay: 0.8, duration: 1, ease: "easeInOut" }}
           />
-          <path
-            d="M40 50 L60 85 L80 50"
-            stroke="#ED7D31"
-            strokeWidth="6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
-        </svg>
-      </motion.div>
+          V
+        </motion.div>
 
-      {/* Title */}
-      <motion.h1
-        className="text-[8vw] font-bold tracking-tight text-[#0048F4] leading-none mb-3"
-        style={{ fontFamily: "var(--font-display)" }}
-        initial={{ opacity: 0, y: 24 }}
-        animate={phase >= 2 ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      >
-        Вектор
-      </motion.h1>
+        {/* LOGO TEXT */}
+        <div className="overflow-hidden mt-8 mb-6 h-[100px]">
+          <motion.h1
+            className="font-display font-bold text-[80px] tracking-tight leading-none"
+            initial={{ y: 100, opacity: 0 }}
+            animate={phase >= 1 ? { y: 0, opacity: 1 } : { y: 100, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 150, damping: 25, delay: 0.2 }}
+          >
+            Вектор
+          </motion.h1>
+        </div>
 
-      {/* Description */}
-      <motion.p
-        className="text-[1.8vw] font-semibold text-[#0048F4]/80 mb-2 text-center"
-        style={{ fontFamily: "var(--font-body)" }}
-        initial={{ opacity: 0, y: 16 }}
-        animate={phase >= 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-        transition={{ duration: 0.5 }}
-      >
-        Инструмент для быстрого создания дорожной карты
-      </motion.p>
+        {/* SLOGAN */}
+        <div className="flex gap-4 text-3xl font-medium text-white/70 overflow-hidden h-12">
+          {sloganWords.map((word, i) => (
+            <motion.span
+              key={i}
+              initial={{ y: 40, opacity: 0, rotateX: -90 }}
+              animate={phase >= 2 ? { y: 0, opacity: 1, rotateX: 0 } : { y: 40, opacity: 0, rotateX: -90 }}
+              transition={{ 
+                type: "spring", 
+                stiffness: 200, 
+                damping: 20, 
+                delay: i * 0.2 + 0.3
+              }}
+              style={{ transformOrigin: "bottom" }}
+            >
+              {word}
+            </motion.span>
+          ))}
+        </div>
+      </div>
 
-      {/* Divider */}
-      <motion.div
-        className="h-[2px] bg-gradient-to-r from-transparent via-[#0048F4] to-transparent mb-3"
-        style={{ width: "36%" }}
-        initial={{ scaleX: 0, opacity: 0 }}
-        animate={phase >= 3 ? { scaleX: 1, opacity: 0.35 } : { scaleX: 0, opacity: 0 }}
-        transition={{ duration: 0.7, delay: 0.15 }}
+      {/* Decorative background lines crossing behind logo */}
+      <motion.div 
+        className="absolute top-1/2 left-0 w-full h-[1px] bg-primary/30"
+        initial={{ scaleX: 0 }}
+        animate={phase >= 1 ? { scaleX: 1 } : { scaleX: 0 }}
+        transition={{ duration: 1.5, ease: "easeInOut" }}
       />
-
-      {/* Tagline */}
-      <motion.p
-        className="text-[1.6vw] font-medium text-[#44546A] tracking-widest uppercase"
-        style={{ fontFamily: "var(--font-body)" }}
-        initial={{ opacity: 0, y: 12 }}
-        animate={phase >= 4 ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-        transition={{ duration: 0.5 }}
-      >
-        Стратегия · Ясность · Движение
-      </motion.p>
+      <motion.div 
+        className="absolute top-0 left-1/2 w-[1px] h-full bg-primary/30"
+        initial={{ scaleY: 0 }}
+        animate={phase >= 1 ? { scaleY: 1 } : { scaleY: 0 }}
+        transition={{ duration: 1.5, ease: "easeInOut", delay: 0.2 }}
+      />
     </motion.div>
   );
 }

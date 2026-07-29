@@ -1,150 +1,126 @@
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useVideoPlayer } from "@/lib/video/hooks";
+
 import { Scene1 } from "./video_scenes/Scene1";
 import { Scene2 } from "./video_scenes/Scene2";
 import { Scene3 } from "./video_scenes/Scene3";
 import { Scene4 } from "./video_scenes/Scene4";
 import { Scene5 } from "./video_scenes/Scene5";
 import { Scene6 } from "./video_scenes/Scene6";
-import { useEffect, useRef } from "react";
+import { Scene7 } from "./video_scenes/Scene7";
+import { Scene8 } from "./video_scenes/Scene8";
 
-const SCENE_DURATIONS = {
-  intro: 5000,
-  streams: 10000,
-  stages: 9000,
-  editing: 5500,
-  versions: 5000,
-  export: 6000,
-};
+const SCENE_DURATIONS = [
+  5000, // 1. Intro
+  6000, // 2. Problem
+  7000, // 3. Solution
+  7000, // 4. Phase View
+  6000, // 5. Assignees
+  5000, // 6. Milestones
+  6000, // 7. Export PPTX
+  6000, // 8. Outro
+];
 
-const TOTAL_DURATION_MS = Object.values(SCENE_DURATIONS).reduce((a, b) => a + b, 0);
-
-// Generates a gentle ambient background chord using Web Audio API.
-// Uses three sine oscillators (C3, E3, G3) with slow panning and a gain envelope.
-function useAmbientMusic() {
-  const audioCtxRef = useRef<AudioContext | null>(null);
-
-  useEffect(() => {
-    let ctx: AudioContext | null = null;
-    let masterGain: GainNode | null = null;
-    const oscillators: OscillatorNode[] = [];
-    let stopped = false;
-
-    const start = () => {
-      if (stopped) return;
-      try {
-        ctx = new AudioContext();
-        audioCtxRef.current = ctx;
-        masterGain = ctx.createGain();
-        masterGain.gain.setValueAtTime(0, ctx.currentTime);
-        masterGain.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 2.5); // fade in
-        masterGain.connect(ctx.destination);
-
-        // Soft chord: C3, G3, E4 — pure sine gives a calm, neutral tone
-        const frequencies = [130.81, 196.0, 329.63, 261.63];
-        const detunes   =  [0,      3,      -3,      5]; // slight chorus
-        const gains     =  [0.25,   0.20,   0.18,   0.15];
-
-        frequencies.forEach((freq, i) => {
-          const osc = ctx!.createOscillator();
-          const oscGain = ctx!.createGain();
-          osc.type = 'sine';
-          osc.frequency.value = freq;
-          osc.detune.value = detunes[i];
-          oscGain.gain.value = gains[i];
-          osc.connect(oscGain);
-          oscGain.connect(masterGain!);
-          osc.start();
-          oscillators.push(osc);
-        });
-
-        // Schedule a gentle fade-out at the end of the video
-        const fadeStartSec = TOTAL_DURATION_MS / 1000 - 2.5;
-        masterGain.gain.setValueAtTime(0.07, ctx.currentTime + Math.max(fadeStartSec, 3));
-        masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + TOTAL_DURATION_MS / 1000);
-      } catch {
-        // AudioContext blocked or unavailable — continue silently
-      }
-    };
-
-    // Try to start immediately; retry on first user interaction if blocked
-    try {
-      start();
-      if (ctx && ctx.state === 'suspended') {
-        const resume = () => {
-          ctx?.resume();
-          document.removeEventListener('click', resume);
-          document.removeEventListener('keydown', resume);
-        };
-        document.addEventListener('click', resume, { once: true });
-        document.addEventListener('keydown', resume, { once: true });
-      }
-    } catch {
-      const onInteraction = () => {
-        start();
-        document.removeEventListener('click', onInteraction);
-        document.removeEventListener('keydown', onInteraction);
-      };
-      document.addEventListener('click', onInteraction, { once: true });
-      document.addEventListener('keydown', onInteraction, { once: true });
-    }
-
-    return () => {
-      stopped = true;
-      oscillators.forEach((osc) => {
-        try { osc.stop(); } catch { /* already stopped */ }
-      });
-      ctx?.close().catch(() => {});
-    };
-  }, []);
-}
+const SCENES = [
+  Scene1,
+  Scene2,
+  Scene3,
+  Scene4,
+  Scene5,
+  Scene6,
+  Scene7,
+  Scene8,
+];
 
 export function VideoTemplate() {
-  const { currentScene } = useVideoPlayer({ durations: SCENE_DURATIONS });
-  useAmbientMusic();
+  const { currentScene } = useVideoPlayer(SCENE_DURATIONS);
+  
+  const CurrentSceneComponent = SCENES[currentScene] || SCENES[0];
+  
+  // 0, 1, 7 are Dark Mode scenes. 2-6 are Light Mode UI scenes.
+  const isLightScene = currentScene >= 2 && currentScene <= 6;
 
   return (
-    // Fixed 16:9 container prevents squishing when viewport dimensions vary
-    <div
-      className="relative overflow-hidden bg-[#F8F9FA]"
-      style={{
-        width: '100vw',
-        height: '100vh',
-        minHeight: '100vh',
-        aspectRatio: '16 / 9',
-      }}
-    >
-      {/* Persistent background gradient that shifts per scene */}
-      <div
-        className="absolute inset-0 transition-all duration-1000 ease-out"
-        style={{
-          background:
-            currentScene === 0
-              ? "linear-gradient(135deg, #F8F9FA 0%, #E8EBF0 100%)"
-              : "linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%)",
+    <div className="w-full h-screen overflow-hidden relative font-sans text-foreground">
+      {/* PERSISTENT BACKGROUND LAYER */}
+      <motion.div
+        className="absolute inset-0 z-0 bg-cover bg-center opacity-30"
+        style={{ backgroundImage: `url(${import.meta.env.BASE_URL}bg_corp.png)` }}
+        animate={{
+          scale: [1, 1.1, 1],
+          opacity: isLightScene ? 0.05 : 0.3
         }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+      />
+      
+      {/* DYNAMIC BACKGROUND COLOR */}
+      <motion.div
+        className="absolute inset-0 z-0"
+        animate={{
+          backgroundColor: isLightScene ? "hsl(210, 40%, 98%)" : "hsl(222, 47%, 11%)"
+        }}
+        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+      />
+      
+      {/* GRID PATTERN */}
+      <motion.div 
+        className="absolute inset-0 z-0"
+        animate={{
+          backgroundImage: isLightScene 
+            ? "linear-gradient(to right, rgba(0, 72, 244, 0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 72, 244, 0.06) 1px, transparent 1px)"
+            : "linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px)",
+          backgroundSize: "60px 60px"
+        }}
+        transition={{ duration: 1.2 }}
       />
 
-      {/* Persistent accent shape */}
-      <div
-        className="absolute w-[30vw] h-[30vw] rounded-full transition-all duration-1200 ease-out pointer-events-none"
-        style={{
-          background: "radial-gradient(circle, rgba(0,72,244,0.08) 0%, transparent 70%)",
-          left: currentScene === 0 ? "50%" : "-10%",
-          top: currentScene === 0 ? "20%" : "10%",
-          transform: `translate(-50%, -50%) scale(${currentScene === 0 ? 1.5 : 0.8})`,
+      {/* ACCENT GLOWS - Persist but move */}
+      <motion.div
+        className="absolute w-[60vw] h-[60vw] rounded-full blur-[100px] pointer-events-none z-0"
+        animate={{
+          background: isLightScene 
+            ? "radial-gradient(circle, rgba(0, 72, 244, 0.1) 0%, rgba(0, 72, 244, 0) 70%)"
+            : "radial-gradient(circle, rgba(0, 72, 244, 0.25) 0%, rgba(0, 72, 244, 0) 70%)",
+          x: currentScene % 2 === 0 ? "50vw" : "-10vw",
+          y: currentScene % 3 === 0 ? "-20vh" : "40vh",
         }}
+        transition={{ duration: 5, ease: "easeInOut" }}
       />
 
-      {/* Scene content */}
-      <AnimatePresence mode="popLayout">
-        {currentScene === 0 && <Scene1 key="scene1" />}
-        {currentScene === 1 && <Scene2 key="scene2" />}
-        {currentScene === 2 && <Scene3 key="scene3" />}
-        {currentScene === 3 && <Scene4 key="scene4" />}
-        {currentScene === 4 && <Scene5 key="scene5" />}
-        {currentScene === 5 && <Scene6 key="scene6" />}
-      </AnimatePresence>
+      <motion.div
+        className="absolute w-[40vw] h-[40vw] rounded-full blur-[100px] pointer-events-none z-0"
+        animate={{
+          background: isLightScene 
+            ? "radial-gradient(circle, rgba(237, 125, 49, 0.08) 0%, rgba(237, 125, 49, 0) 70%)"
+            : "radial-gradient(circle, rgba(237, 125, 49, 0.2) 0%, rgba(237, 125, 49, 0) 70%)",
+          x: currentScene % 2 === 0 ? "-10vw" : "60vw",
+          y: currentScene % 3 === 0 ? "50vh" : "-10vh",
+        }}
+        transition={{ duration: 7, ease: "easeInOut" }}
+      />
+
+      {/* BRAND PERSISTENT LOGO */}
+      <motion.div
+        className="absolute top-8 left-10 z-50 flex items-center gap-3"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ 
+          opacity: currentScene === 0 || currentScene === 7 ? 0 : 1, // Hidden on intro/outro, visible in UI scenes
+          y: currentScene === 0 || currentScene === 7 ? -20 : 0
+        }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-xl shadow-[0_0_20px_rgba(0,72,244,0.4)]">
+          V
+        </div>
+        <span className={\`font-display font-bold text-2xl \${isLightScene ? 'text-foreground' : 'text-white'}\`}>Вектор</span>
+      </motion.div>
+
+      {/* SCENE CONTENT */}
+      <div className="relative w-full h-full z-10">
+        <AnimatePresence mode="popLayout">
+          <CurrentSceneComponent key={currentScene} />
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
