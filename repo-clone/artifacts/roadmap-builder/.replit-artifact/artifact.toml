@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Roadmap Builder"
+version = "1.0.0"
+id = "artifacts/roadmap-builder"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22022
+
+[services.development]
+run = "pnpm --filter @workspace/roadmap-builder run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/roadmap-builder", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/roadmap-builder/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22022"
+BASE_PATH = "/"

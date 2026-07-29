@@ -1,0 +1,104 @@
+name: Build Vektor .exe
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Job 1: build web on Linux ─────────────────────────────────────────────
+  build-web:
+    name: Build web app (Linux)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        # BASE_PATH=/ — Vite generates absolute /assets/... paths.
+        # This is correct because Electron serves via app:// custom protocol,
+        # NOT file://. The protocol handler maps app://vektor/assets/... → disk.
+        run: pnpm --filter @workspace/roadmap-builder run build
+        env:
+          BASE_PATH: /
+          PORT: 3000
+          NODE_ENV: production
+
+      - name: Upload built web app
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: artifacts/roadmap-builder/dist/public
+          retention-days: 1
+
+  # ── Job 2: build EXE on Windows ───────────────────────────────────────────
+  build-exe:
+    name: Build Windows .exe
+    runs-on: windows-latest
+    needs: build-web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download built web app
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          # Goes into roadmap-electron/app-dist/
+          # electron-builder picks it up via files[] in package.json
+          path: roadmap-electron/app-dist
+
+      - name: Convert PNG icon to ICO
+        # NSIS requires a real .ico — PNG causes "invalid icon file".
+        # ImageMagick (magick) is pre-installed on windows-latest runners.
+        run: magick "roadmap-electron/build/icon.png" -resize 256x256 "roadmap-electron/build/icon.ico"
+
+      - name: Install Electron deps
+        working-directory: roadmap-electron
+        run: npm install
+
+      - name: Build Windows installer + ZIP
+        working-directory: roadmap-electron
+        run: npm run dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Publish to Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Vektor — latest release"
+          body: |
+            ## Vektor — Roadmap Builder (Вектор)
+
+            **Установщик:** скачайте `Vektor Setup 1.0.0.exe` и запустите — появится ярлык на рабочем столе.
+            **Portable:** скачайте `Vektor-1.0.0-win.zip`, **распакуйте полностью**, запустите `Vektor.exe` из папки.
+          files: |
+            roadmap-electron/dist-electron/*.exe
+            roadmap-electron/dist-electron/*.zip
+          make_latest: true

@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "N4vlwYyxNwm2Qg5Uoy4o_"
+uri = "file://vektor-demo.mp4"
+type = "video"
+title = "Вектор — демо-видео"

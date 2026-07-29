@@ -1,0 +1,1 @@
+- [Electron Windows build rules](electron-windows-build.md) — NSIS+icon+encoding gotchas for GitHub Actions EXE builds
