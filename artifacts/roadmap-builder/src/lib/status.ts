@@ -1,4 +1,5 @@
-import { ItemStatus, Assignee, AssigneeRole, DEFAULT_ASSIGNEE_ROLES } from '@/types/roadmap';
+import { ItemStatus, Assignee, DEFAULT_ASSIGNEE_ROLES } from '@/types/roadmap';
+import type { AssigneeRole } from '@/types/roadmap';
 
 export interface StatusStyle {
   bg: string;
@@ -9,10 +10,10 @@ export interface StatusStyle {
 }
 
 export const STATUS_STYLES: Record<ItemStatus, StatusStyle> = {
-  done:        { bg: '#D6EADD', border: '#70AD47', fg: '#1E5631', label: 'Готово',    icon: '✓' },
-  'in-progress':{ bg: '#E3ECFB', border: '#4472C4', fg: '#0D3B7A', label: 'В работе', icon: '●' },
-  backlog:     { bg: '#F0F0F0', border: '#A5A5A5', fg: '#444444', label: 'Бэклог',    icon: '○' },
-  delayed:     { bg: '#FDECEA', border: '#C62828', fg: '#7F1D1D', label: 'Задержка',  icon: '⚠' },
+  done:          { bg: '#D6EADD', border: '#70AD47', fg: '#1E5631', label: 'Готово',   icon: '✓' },
+  'in-progress': { bg: '#E3ECFB', border: '#4472C4', fg: '#0D3B7A', label: 'В работе', icon: '●' },
+  backlog:       { bg: '#F0F0F0', border: '#A5A5A5', fg: '#444444', label: 'Бэклог',   icon: '○' },
+  delayed:       { bg: '#FDECEA', border: '#C62828', fg: '#7F1D1D', label: 'Задержка', icon: '⚠' },
 };
 
 export function getStatusStyle(status: ItemStatus): StatusStyle {
@@ -39,4 +40,5 @@ export const ASSIGNEE_COLORS: Record<string, string> = Object.fromEntries(
   DEFAULT_ASSIGNEE_ROLES.map(r => [r.id, r.color])
 );
 
-export { DEFAULT_ASSIGNEE_ROLES, AssigneeRole };
+export { DEFAULT_ASSIGNEE_ROLES };
+export type { AssigneeRole };
