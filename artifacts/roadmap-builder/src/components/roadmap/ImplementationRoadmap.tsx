@@ -38,16 +38,8 @@ export default function ImplementationRoadmap({ data, fullscreen = false, assign
           1
         </div>
 
-        <div className="p-6 flex-1 overflow-auto flex flex-col">
-          {/* Fullscreen: scale content up more for client presentation */}
-          <div
-            className="flex-1 flex flex-col min-h-0"
-            style={
-              fullscreen
-                ? { transform: 'scale(1.45)', transformOrigin: 'top left', width: '69%' }
-                : undefined
-            }
-          >
+        <div className={`p-6 flex-1 ${fullscreen ? 'overflow-hidden' : 'overflow-auto'} flex flex-col`}>
+          <div className="flex-1 flex flex-col min-h-0">
           {/* Title — black on white with blue underline accent */}
           <div
             className="text-black font-bold px-4 py-3 mb-0 tracking-tight bg-white border-b-2"
@@ -117,7 +109,7 @@ export default function ImplementationRoadmap({ data, fullscreen = false, assign
             </div>
 
             {/* Swimlanes */}
-            <div className="flex-1 overflow-y-auto border-b border-border">
+            <div className={`flex-1 ${fullscreen ? 'overflow-hidden' : 'overflow-y-auto'} border-b border-border`}>
               {swimlanes.map((swimlane, swimlaneIdx) => {
                 const swimlaneColor = SWIMLANE_COLORS[swimlaneIdx % SWIMLANE_COLORS.length];
                 const rows = layoutTasksIntoRows(swimlane.tasks);
@@ -153,7 +145,7 @@ export default function ImplementationRoadmap({ data, fullscreen = false, assign
                       {/* Task sub-rows */}
                       <div className="relative py-2 flex flex-col gap-1">
                         {rows.map((rowTasks, rowIdx) => (
-                          <div key={rowIdx} className="relative w-full" style={{ height: '36px' }}>
+                          <div key={rowIdx} className="relative w-full" style={{ minHeight: '36px' }}>
                             {rowTasks.map((task) => {
                               const startPercent = (task.startPeriod / periods.length) * 100;
                               const widthPercent = (task.span / periods.length) * 100;
@@ -167,12 +159,12 @@ export default function ImplementationRoadmap({ data, fullscreen = false, assign
                                   style={{
                                     left: `${startPercent}%`,
                                     width: `${widthPercent}%`,
-                                    height: '30px',
+                                    minHeight: '30px',
                                     top: '3px',
                                   }}
                                 >
                                   <div
-                                    className="w-full h-full rounded shadow-sm flex flex-col justify-center px-2 py-1 overflow-hidden"
+                                    className="w-full rounded shadow-sm flex flex-col justify-center px-2 py-1"
                                     style={{
                                       backgroundColor: statusStyle.bg,
                                       borderLeft: `4px solid ${statusStyle.border}`,
@@ -181,7 +173,8 @@ export default function ImplementationRoadmap({ data, fullscreen = false, assign
                                     title={task.description}
                                   >
                                     <div
-                                      className="font-bold truncate leading-tight flex items-center gap-1"
+                                      className="font-bold leading-tight flex items-center gap-1 break-words"
+                                      style={{ wordBreak: 'break-word' }}
                                       style={{ fontSize: '8px', fontFamily: 'Arial, sans-serif' }}
                                     >
                                       {task.description}

@@ -196,7 +196,7 @@ export default function RoadmapBuilder() {
           {isFullscreen ? 'Свернуть' : 'На весь экран'}
         </button>
 
-        <div className="flex-1 overflow-auto roadmap-slide">
+        <div className={`flex-1 roadmap-slide ${isFullscreen ? 'overflow-hidden' : 'overflow-auto'}`}>
           {state.mode === 'phase' ? (
             <PhaseRoadmap data={state.phaseData} fullscreen={isFullscreen} assigneeRoles={assigneeRoles} />
           ) : (
@@ -209,10 +209,10 @@ export default function RoadmapBuilder() {
           <div className="flex items-center gap-6 flex-wrap">
             <span className="text-muted-foreground uppercase tracking-wider text-[10px]">Статусы:</span>
             {[
-              { label: 'Готово', bg: 'var(--status-done-bg)', border: 'var(--status-done-border)' },
-              { label: 'В работе', bg: 'var(--status-inprogress-bg)', border: 'var(--status-inprogress-border)' },
-              { label: 'Бэклог', bg: 'var(--status-backlog-bg)', border: 'var(--status-backlog-border)' },
-              { label: 'Задержка', bg: 'var(--status-delayed-bg)', border: 'var(--status-delayed-border)' },
+              { label: 'Готово',   bg: '#D6EADD', border: '#70AD47' },
+              { label: 'В работе', bg: '#E3ECFB', border: '#4472C4' },
+              { label: 'Бэклог',   bg: '#F0F0F0', border: '#A5A5A5' },
+              { label: 'Задержка', bg: '#FDECEA', border: '#C62828' },
             ].map(({ label, bg, border }) => (
               <div key={label} className="flex items-center gap-2">
                 <div
