@@ -24,15 +24,8 @@ export default function PhaseRoadmap({ data, fullscreen = false, assigneeRoles }
           1
         </div>
 
-        <div className="p-6 flex-1 overflow-auto">
-          {/* Fullscreen: scale content up more so it reads well from across a room */}
-          <div
-            style={
-              fullscreen
-                ? { transform: 'scale(1.45)', transformOrigin: 'top left', width: '69%' }
-                : undefined
-            }
-          >
+        <div className={`p-6 flex-1 ${fullscreen ? 'overflow-hidden' : 'overflow-auto'}`}>
+          <div>
           <table className="border-collapse w-full table-fixed">
             <thead>
               {/* Title row — black on white per corporate standard */}
@@ -118,6 +111,8 @@ export default function PhaseRoadmap({ data, fullscreen = false, assigneeRoles }
                                 const cellStyle: React.CSSProperties = {
                                   backgroundColor: statusStyle?.bg,
                                   color: statusStyle?.fg,
+                                  borderLeftColor: isStart && statusStyle ? statusStyle.border : undefined,
+                                  borderLeftWidth: isStart && statusStyle ? '3px' : undefined,
                                 };
 
                                 if (isInRange && isDelayed) {
@@ -136,7 +131,7 @@ export default function PhaseRoadmap({ data, fullscreen = false, assigneeRoles }
                                           <span className="font-mono opacity-70 mt-0.5 shrink-0" style={{ fontSize: '8px' }}>
                                             {phase.number}.{itemIndex + 1}
                                           </span>
-                                          <span className="leading-snug flex-1 font-medium break-words" style={{ fontSize: '8px', fontFamily: 'Arial, sans-serif' }}>
+                                          <span className="leading-snug flex-1 font-medium break-words min-w-0" style={{ fontSize: '8px', fontFamily: 'Arial, sans-serif', wordBreak: 'break-word' }} title={item.description}>
                                             {item.description}
                                           </span>
                                           {isDelayed && (
@@ -167,8 +162,9 @@ export default function PhaseRoadmap({ data, fullscreen = false, assigneeRoles }
                                       return milestone ? (
                                         <div className="absolute top-0.5 right-0.5 z-10">
                                           <div
-                                            className="text-white px-1 py-0.5 rounded-sm text-[7px] font-bold leading-tight break-words max-w-[110px]"
+                                            className="text-white px-1 py-0.5 rounded-sm text-[7px] font-bold leading-none whitespace-nowrap"
                                             style={{ backgroundColor: phaseColor }}
+                                            title={milestone.label}
                                           >
                                             ★ {milestone.label}
                                           </div>
