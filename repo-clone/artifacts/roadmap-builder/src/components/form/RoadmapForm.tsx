@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Plus, Trash2, ChevronDown, RotateCcw, Download, Presentation, FolderOpen, Save, HelpCircle, Eye, EyeOff, X, Pencil, Check } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, RotateCcw, Download, Presentation, FolderOpen, Save, HelpCircle, Eye, EyeOff, X, Pencil, Check, Mail } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
@@ -444,6 +444,13 @@ export default function RoadmapForm({
             >
               <Save className="w-3 h-3" />
             </Button>
+            <a
+              href="mailto:changeteam@tedo.ru?subject=%D0%92%D0%B5%D0%BA%D1%82%D0%BE%D1%80%20%E2%80%94%20%D0%B2%D0%BE%D0%BF%D1%80%D0%BE%D1%81%2F%D0%BE%D1%88%D0%B8%D0%B1%D0%BA%D0%B0"
+              className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-[#0048F4] hover:bg-accent transition-colors"
+              title="Написать нам: changeteam@tedo.ru"
+            >
+              <Mail className="w-4 h-4" />
+            </a>
             <Button
               variant="ghost"
               size="sm"

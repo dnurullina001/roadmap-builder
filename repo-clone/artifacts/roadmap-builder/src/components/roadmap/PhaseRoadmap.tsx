@@ -136,7 +136,7 @@ export default function PhaseRoadmap({ data, fullscreen = false, assigneeRoles }
                                           <span className="font-mono opacity-70 mt-0.5 shrink-0" style={{ fontSize: '8px' }}>
                                             {phase.number}.{itemIndex + 1}
                                           </span>
-                                          <span className="leading-snug flex-1 font-medium truncate" style={{ fontSize: '8px', fontFamily: 'Arial, sans-serif' }} title={item.description}>
+                                          <span className="leading-snug flex-1 font-medium break-words" style={{ fontSize: '8px', fontFamily: 'Arial, sans-serif' }}>
                                             {item.description}
                                           </span>
                                           {isDelayed && (
@@ -167,9 +167,8 @@ export default function PhaseRoadmap({ data, fullscreen = false, assigneeRoles }
                                       return milestone ? (
                                         <div className="absolute top-0.5 right-0.5 z-10">
                                           <div
-                                            className="text-white px-1 py-0.5 rounded-sm text-[7px] font-bold leading-none whitespace-nowrap"
+                                            className="text-white px-1 py-0.5 rounded-sm text-[7px] font-bold leading-tight break-words max-w-[110px]"
                                             style={{ backgroundColor: phaseColor }}
-                                            title={milestone.label}
                                           >
                                             ★ {milestone.label}
                                           </div>

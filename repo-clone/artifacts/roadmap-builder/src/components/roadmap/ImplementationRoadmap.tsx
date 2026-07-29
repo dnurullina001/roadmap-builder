@@ -150,41 +150,43 @@ export default function ImplementationRoadmap({ data, fullscreen = false, assign
                         ))}
                       </div>
 
-                      {/* Task sub-rows */}
-                      <div className="relative py-2 flex flex-col gap-1">
+                      {/* Task sub-rows — CSS grid so each row auto-grows with text */}
+                      <div className="relative py-1 flex flex-col gap-1">
                         {rows.map((rowTasks, rowIdx) => (
-                          <div key={rowIdx} className="relative w-full" style={{ height: '36px' }}>
+                          <div
+                            key={rowIdx}
+                            className="relative w-full"
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: `repeat(${periods.length}, 1fr)`,
+                              minHeight: '32px',
+                            }}
+                          >
                             {rowTasks.map((task) => {
-                              const startPercent = (task.startPeriod / periods.length) * 100;
-                              const widthPercent = (task.span / periods.length) * 100;
                               const statusStyle = getStatusStyle(task.status);
                               const isDelayed = task.status === 'delayed';
-
                               return (
                                 <div
                                   key={task.id}
-                                  className="absolute px-1"
+                                  className="px-0.5 py-0.5"
                                   style={{
-                                    left: `${startPercent}%`,
-                                    width: `${widthPercent}%`,
-                                    height: '30px',
-                                    top: '3px',
+                                    gridColumn: `${task.startPeriod + 1} / span ${task.span}`,
                                   }}
                                 >
                                   <div
-                                    className="w-full h-full rounded shadow-sm flex flex-col justify-center px-2 py-1 overflow-hidden"
+                                    className="rounded shadow-sm flex flex-col px-2 py-1"
                                     style={{
                                       backgroundColor: statusStyle.bg,
                                       borderLeft: `4px solid ${statusStyle.border}`,
                                       color: statusStyle.fg,
+                                      minHeight: '28px',
                                     }}
-                                    title={task.description}
                                   >
                                     <div
-                                      className="font-bold truncate leading-tight flex items-center gap-1"
+                                      className="font-bold break-words leading-tight flex items-start gap-1"
                                       style={{ fontSize: '8px', fontFamily: 'Arial, sans-serif' }}
                                     >
-                                      {task.description}
+                                      <span className="flex-1">{task.description}</span>
                                       {isDelayed && <span className="text-[#C62828] shrink-0">⚠</span>}
                                     </div>
                                     {task.assignees && task.assignees.length > 0 && (
@@ -210,7 +212,7 @@ export default function ImplementationRoadmap({ data, fullscreen = false, assign
                             })}
                           </div>
                         ))}
-                        {rows.length === 0 && <div style={{ height: '36px' }} />}
+                        {rows.length === 0 && <div style={{ minHeight: '32px' }} />}
                       </div>
                     </div>
                   </div>
