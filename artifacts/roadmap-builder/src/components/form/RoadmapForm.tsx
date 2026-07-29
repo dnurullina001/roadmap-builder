@@ -90,9 +90,17 @@ const AssigneeToggle = ({ values, onChange }: { values: Assignee[]; onChange: (a
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <div className="flex items-center gap-2 mb-2">
-      <div className="w-0.5 h-3 bg-[#0048F4]" />
-      <h3 className="text-[10px] uppercase font-bold text-foreground tracking-wider">{title}</h3>
+    <div
+      className="flex items-center gap-2 mb-2.5 rounded-[4px] px-2.5 py-1.5"
+      style={{ backgroundColor: 'rgba(0, 72, 244, 0.07)' }}
+    >
+      <div className="w-1 h-4 rounded-sm shrink-0" style={{ backgroundColor: '#0048F4' }} />
+      <h3
+        className="text-[12.5px] uppercase font-extrabold tracking-wide"
+        style={{ color: '#0048F4' }}
+      >
+        {title}
+      </h3>
     </div>
   );
 }

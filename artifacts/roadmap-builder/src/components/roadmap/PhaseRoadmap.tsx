@@ -4,21 +4,35 @@ import { getStatusStyle, ASSIGNEE_LABELS, ASSIGNEE_COLORS } from '@/lib/status';
 
 interface PhaseRoadmapProps {
   data: PhaseRoadmapData;
+  fullscreen?: boolean;
 }
 
 const PHASE_COLORS = ['#0048F4', '#4472C4', '#ED7D31', '#70AD47', '#FFC000', '#5B9BD5'];
 
-export default function PhaseRoadmap({ data }: PhaseRoadmapProps) {
+export default function PhaseRoadmap({ data, fullscreen = false }: PhaseRoadmapProps) {
   const { title, periods, currentPosition, phases, milestones } = data;
 
   return (
-    <div className="w-full h-full overflow-hidden p-6 bg-[#EBEBEB] flex flex-col items-center">
-      <div className="bg-white shadow-lg max-w-[1200px] w-full relative flex-1 flex flex-col min-h-0">
+    <div
+      className={`w-full h-full overflow-hidden bg-[#EBEBEB] flex flex-col items-center ${fullscreen ? 'p-10' : 'p-6'}`}
+    >
+      <div
+        className={`bg-white shadow-lg w-full relative flex-1 flex flex-col min-h-0 ${fullscreen ? '' : 'max-w-[1200px]'}`}
+      >
         <div className="absolute top-3 right-3 text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-sm z-10">
           1
         </div>
 
         <div className="p-6 flex-1 overflow-auto">
+          {/* Fullscreen: scale content up so it reads well from across a room /
+              on a screen-share, without changing the underlying layout math. */}
+          <div
+            style={
+              fullscreen
+                ? { transform: 'scale(1.25)', transformOrigin: 'top left', width: '80%' }
+                : undefined
+            }
+          >
           <table className="border-collapse w-full table-fixed">
             <thead>
               {/* Title row — black on white per corporate standard */}
@@ -175,6 +189,7 @@ export default function PhaseRoadmap({ data }: PhaseRoadmapProps) {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>

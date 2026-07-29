@@ -1,6 +1,6 @@
 import pptxgen from 'pptxgenjs';
-import { PhaseRoadmapData, ImplementationRoadmapData, Phase } from '@/types/roadmap';
-import { getStatusStyle, ASSIGNEE_LABELS } from '@/lib/status';
+import { PhaseRoadmapData, ImplementationRoadmapData, Phase, Assignee } from '@/types/roadmap';
+import { getStatusStyle, ASSIGNEE_LABELS, ASSIGNEE_COLORS } from '@/lib/status';
 
 // ── Corporate slide layout ────────────────────────────────────────────────────
 const SLIDE_W = 12.598;
@@ -23,12 +23,87 @@ const TITLE_SIZE = 28;
 const BODY_FONT  = 'Arial';
 const BODY_SIZE  = 10;
 
+// Cell text (task/item descriptions) — kept smaller than headers/phase-names/months
+// so that more content fits without visually overflowing the cell.
+const CELL_TEXT_SIZE = 8;
+
 const CORP_NAVY = '44546A';
 const CORP_BLUE = '0048F4';
 const PHASE_COLORS = ['0048F4', '4472C4', 'ED7D31', '70AD47', 'FFC000', '5B9BD5'];
 
 // Minimum readable row height — never place shapes below this height
 const MIN_ROW_H = 0.18; // inches
+
+// ── Auto-growing cells ───────────────────────────────────────────────────────
+// pptxgenjs doesn't measure text, so we estimate wrapped-line count from an
+// average Arial character width. This lets a row grow taller when its text
+// would otherwise overflow the box, instead of clipping/visually spilling out.
+function estimateWrappedLines(text: string, fontSizePt: number, boxWidthIn: number): number {
+  if (!text) return 1;
+  const avgCharWidthIn = (fontSizePt / 72) * 0.52; // Arial average glyph width factor
+  const charsPerLine = Math.max(4, Math.floor(boxWidthIn / avgCharWidthIn));
+  return Math.max(1, Math.ceil(text.length / charsPerLine));
+}
+
+function textBlockHeightIn(text: string, fontSizePt: number, boxWidthIn: number): number {
+  const lines = estimateWrappedLines(text, fontSizePt, Math.max(boxWidthIn, 0.2));
+  const lineHeightIn = (fontSizePt / 72) * 1.3;
+  return lines * lineHeightIn;
+}
+
+// ── Assignee badges ──────────────────────────────────────────────────────────
+// Renders assignees as small colored chips (matching the on-screen app look)
+// instead of appending "[Name, Name]" text, which used to stretch/overflow cells.
+const BADGE_H = 0.15;
+const BADGE_GAP = 0.035;
+const BADGE_FONT = 6;
+
+function badgeWidth(label: string): number {
+  return Math.max(0.28, label.length * (BADGE_FONT / 72) * 1.0 + 0.14);
+}
+
+function computeBadgeLayout(assignees: Assignee[], maxWidth: number): { rows: Assignee[][]; height: number } {
+  if (!assignees || assignees.length === 0) return { rows: [], height: 0 };
+  const rows: Assignee[][] = [[]];
+  let rowWidth = 0;
+  assignees.forEach((a) => {
+    const label = (ASSIGNEE_LABELS[a] || '??').substring(0, 2).toUpperCase();
+    const w = badgeWidth(label);
+    if (rowWidth + w > maxWidth && rows[rows.length - 1].length > 0) {
+      rows.push([]);
+      rowWidth = 0;
+    }
+    rows[rows.length - 1].push(a);
+    rowWidth += w + BADGE_GAP;
+  });
+  const height = rows.length * BADGE_H + (rows.length - 1) * BADGE_GAP;
+  return { rows, height };
+}
+
+function drawAssigneeBadges(slide: pptxgen.Slide, assignees: Assignee[], x: number, y: number, maxWidth: number) {
+  const { rows } = computeBadgeLayout(assignees, maxWidth);
+  let curY = y;
+  rows.forEach((rowAssignees) => {
+    let curX = x;
+    rowAssignees.forEach((a) => {
+      const label = (ASSIGNEE_LABELS[a] || '??').substring(0, 2).toUpperCase();
+      const w = badgeWidth(label);
+      slide.addShape('roundRect' as any, {
+        x: curX, y: curY, w, h: BADGE_H,
+        fill: { color: hex(ASSIGNEE_COLORS[a]) },
+        line: { color: hex(ASSIGNEE_COLORS[a]), pt: 0 },
+        rectRadius: 0.025,
+      });
+      slide.addText(label, {
+        x: curX, y: curY, w, h: BADGE_H,
+        fontFace: BODY_FONT, fontSize: BADGE_FONT, bold: true,
+        color: 'FFFFFF', align: 'center', valign: 'middle',
+      });
+      curX += w + BADGE_GAP;
+    });
+    curY += BADGE_H + BADGE_GAP;
+  });
+}
 
 function setupLayout(prs: pptxgen) {
   (prs as any).defineLayout({ name: 'CORP', width: SLIDE_W, height: SLIDE_H });
@@ -190,9 +265,24 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
       if (currentY >= BOTTOM_LIMIT - MIN_ROW_H) return;
 
       const phaseColor = PHASE_COLORS[phaseIdx % PHASE_COLORS.length];
-      const rowCount = Math.max(phase.subItems.length, 1);
+
+      // Per-row heights: start from the uniform baseline (ROW_H) but let a row
+      // grow taller if its text/badges wouldn't fit at CELL_TEXT_SIZE — so the
+      // cell lengthens downward instead of the text overflowing it.
+      const rowHeights: number[] = phase.subItems.length
+        ? phase.subItems.map((item) => {
+            const spanW = periodW * Math.max(item.endPeriod - item.startPeriod, 1);
+            const innerW = Math.max(spanW - 0.08, 0.2);
+            const descH = textBlockHeightIn(item.description, CELL_TEXT_SIZE, innerW);
+            const badgeLayout = computeBadgeLayout(item.assignees || [], innerW);
+            const neededH = 0.06 + descH + (badgeLayout.height > 0 ? badgeLayout.height + 0.03 : 0);
+            return Math.max(ROW_H, neededH, MIN_ROW_H);
+          })
+        : [ROW_H];
+
       // Clamp phase block so it never bleeds past BOTTOM_LIMIT
-      const phaseH = Math.min(rowCount * ROW_H, BOTTOM_LIMIT - currentY);
+      const naturalPhaseH = rowHeights.reduce((a, b) => a + b, 0);
+      const phaseH = Math.min(naturalPhaseH, BOTTOM_LIMIT - currentY);
 
       // Phase label cell
       slide.addShape('rect' as any, {
@@ -221,10 +311,11 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
           });
         });
       } else {
+        let itemY = currentY;
         phase.subItems.forEach((item, itemIdx) => {
-          const itemY = currentY + itemIdx * ROW_H;
-          if (itemY >= BOTTOM_LIMIT) return; // clip rows that overflow
-          const rowH = Math.min(ROW_H, BOTTOM_LIMIT - itemY);
+          const naturalRowH = rowHeights[itemIdx];
+          if (itemY >= BOTTOM_LIMIT) return; // clip rows that overflow the slide
+          const rowH = Math.min(naturalRowH, BOTTOM_LIMIT - itemY);
           const statusStyle = getStatusStyle(item.status);
 
           data.periods.forEach((_, periodIdx) => {
@@ -239,19 +330,27 @@ export function exportPhaseRoadmapToPptx(data: PhaseRoadmapData, slideCount = 1)
             });
 
             if (isStart) {
-              const assigneeText = (item.assignees || [])
-                .map((a) => ASSIGNEE_LABELS[a])
-                .join(', ');
               const spanW = periodW * Math.max(item.endPeriod - item.startPeriod, 1);
-              const textContent =
-                item.description + (assigneeText ? `  [${assigneeText}]` : '');
-              slide.addText(textContent, {
+              const innerW = spanW - 0.06;
+              const assignees = item.assignees || [];
+              const badgeLayout = computeBadgeLayout(assignees, innerW);
+              const descH = rowH - (badgeLayout.height > 0 ? badgeLayout.height + 0.05 : 0.02);
+
+              slide.addText(item.description, {
                 x: x + 0.03, y: itemY + 0.01,
-                w: spanW - 0.06, h: rowH - 0.02,
-                fontFace: BODY_FONT, fontSize: BODY_SIZE,
+                w: innerW, h: Math.max(descH, 0.12),
+                fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
                 color: hex(statusStyle.fg),
-                wrap: true, valign: 'middle',
+                wrap: true, valign: badgeLayout.height > 0 ? 'top' : 'middle',
               });
+
+              if (badgeLayout.height > 0) {
+                drawAssigneeBadges(
+                  slide, assignees,
+                  x + 0.03, itemY + rowH - badgeLayout.height - 0.02,
+                  innerW,
+                );
+              }
             }
           });
         });
@@ -410,11 +509,25 @@ export function exportImplementationRoadmapToPptx(
         }
         if (!placed) taskRows.push([task]);
       }
-      const rowCount = Math.max(taskRows.length, 1);
-      const actualLaneH = Math.min(
-        rowCount * TASK_ROW_H + 0.06,
-        BOTTOM_LIMIT - laneY,
-      );
+      // Per-row heights: baseline TASK_ROW_H, but grow a row if any task in it
+      // needs more room for its (wrapped) text + assignee badges at 8pt.
+      const rowHeights: number[] = taskRows.length
+        ? taskRows.map((rowTasks) => {
+            let maxNeeded = TASK_ROW_H;
+            rowTasks.forEach((task) => {
+              const w = Math.max(task.span * periodW - 0.04, 0.1);
+              const innerW = Math.max(w - 0.08, 0.2);
+              const descH = textBlockHeightIn(task.description, CELL_TEXT_SIZE, innerW);
+              const badgeLayout = computeBadgeLayout(task.assignees || [], innerW);
+              const needed = 0.08 + descH + (badgeLayout.height > 0 ? badgeLayout.height + 0.03 : 0);
+              maxNeeded = Math.max(maxNeeded, needed);
+            });
+            return maxNeeded;
+          })
+        : [TASK_ROW_H];
+
+      const naturalLaneH = rowHeights.reduce((a, b) => a + b, 0) + 0.06;
+      const actualLaneH = Math.min(naturalLaneH, BOTTOM_LIMIT - laneY);
 
       // Label cell
       slide.addShape('rect' as any, {
@@ -441,20 +554,21 @@ export function exportImplementationRoadmapToPptx(
       });
 
       // Task bars
+      let rowCursorY = laneY;
       taskRows.forEach((rowTasks, rowIdx) => {
-        const taskY = laneY + rowIdx * TASK_ROW_H + 0.03;
-        if (taskY >= BOTTOM_LIMIT) return;
-        const taskH = Math.min(TASK_ROW_H - 0.06, BOTTOM_LIMIT - taskY);
+        const rowH = rowHeights[rowIdx];
+        const taskY = rowCursorY + 0.03;
+        if (taskY >= BOTTOM_LIMIT) { rowCursorY += rowH; return; }
+        const taskH = Math.min(rowH - 0.06, BOTTOM_LIMIT - taskY);
 
         rowTasks.forEach((task) => {
           const statusStyle = getStatusStyle(task.status);
           const x = ML + LABEL_W + task.startPeriod * periodW + 0.02;
           const w = Math.max(task.span * periodW - 0.04, 0.1);
-          const assigneeText = (task.assignees || [])
-            .map((a) => ASSIGNEE_LABELS[a])
-            .join(', ');
-          const taskText =
-            task.description + (assigneeText ? `  [${assigneeText}]` : '');
+          const innerW = w - 0.08;
+          const assignees = task.assignees || [];
+          const badgeLayout = computeBadgeLayout(assignees, innerW);
+          const descH = taskH - (badgeLayout.height > 0 ? badgeLayout.height + 0.05 : 0.02);
 
           slide.addShape('rect' as any, {
             x, y: taskY, w, h: taskH,
@@ -462,13 +576,23 @@ export function exportImplementationRoadmapToPptx(
             line: { color: hex(statusStyle.border), pt: 1 },
             rectRadius: 0.03,
           });
-          slide.addText(taskText, {
-            x: x + 0.04, y: taskY + 0.01, w: w - 0.08, h: taskH - 0.02,
-            fontFace: BODY_FONT, fontSize: BODY_SIZE,
+          slide.addText(task.description, {
+            x: x + 0.04, y: taskY + 0.01, w: innerW, h: Math.max(descH, 0.12),
+            fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
             color: hex(statusStyle.fg),
-            wrap: true, valign: 'middle',
+            wrap: true, valign: badgeLayout.height > 0 ? 'top' : 'middle',
           });
+
+          if (badgeLayout.height > 0) {
+            drawAssigneeBadges(
+              slide, assignees,
+              x + 0.04, taskY + taskH - badgeLayout.height - 0.02,
+              innerW,
+            );
+          }
         });
+
+        rowCursorY += rowH;
       });
 
       laneY += actualLaneH;

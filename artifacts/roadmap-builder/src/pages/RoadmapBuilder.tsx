@@ -9,6 +9,9 @@ import SlideCountDialog from '@/components/SlideCountDialog';
 import HelpDialog from '@/components/HelpDialog';
 import { exportPhaseRoadmapToPptx, exportImplementationRoadmapToPptx } from '@/lib/export-pptx';
 import { SavedProject, saveNewVersion } from '@/lib/projects';
+import { Maximize2, Minimize2 } from 'lucide-react';
+import { ASSIGNEE_LABELS, ASSIGNEE_COLORS } from '@/lib/status';
+import { Assignee } from '@/types/roadmap';
 
 const STORAGE_KEY = 'roadmap-builder-state';
 const ACTIVE_PROJECT_KEY = 'vektor-active-project';
@@ -44,10 +47,35 @@ export default function RoadmapBuilder() {
   const [showSlideDialog, setShowSlideDialog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [hiddenModes, setHiddenModes] = useState<RoadmapMode[]>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     saveState(state);
   }, [state]);
+
+  // Fullscreen preview mode — hides the editor panel and expands the roadmap
+  // so it's easy to show a client on a call or a shared screen.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
+  const toggleFullscreen = () => {
+    const next = !isFullscreen;
+    setIsFullscreen(next);
+    try {
+      if (next && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else if (!next && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    } catch {
+      // Fullscreen API not available — the in-app expanded layout still applies.
+    }
+  };
 
   useEffect(() => {
     if (currentProjectId) {
@@ -130,56 +158,87 @@ export default function RoadmapBuilder() {
 
   return (
     <div className="h-[100dvh] flex overflow-hidden bg-background">
-      {/* Left Panel — Form */}
-      <div className="w-[35%] shrink-0 no-print border-r border-border h-full">
-        <RoadmapForm
-          mode={state.mode}
-          phaseData={state.phaseData}
-          implementationData={state.implementationData}
-          currentProjectId={currentProjectId}
-          onModeChange={(mode) => setState((prev) => ({ ...prev, mode }))}
-          onPhaseDataChange={(phaseData) => setState((prev) => ({ ...prev, phaseData }))}
-          onImplementationDataChange={(implementationData) =>
-            setState((prev) => ({ ...prev, implementationData }))
-          }
-          onReset={handleReset}
-          onExport={handleExport}
-          onExportPptx={handleExportPptx}
-          onOpenProjects={() => setShowProjects(true)}
-          onQuickSave={handleQuickSave}
-          onShowHelp={() => setShowHelp(true)}
-          hiddenModes={hiddenModes}
-          onToggleHideMode={handleToggleHideMode}
-        />
-      </div>
+      {/* Left Panel — Form (hidden in fullscreen preview mode) */}
+      {!isFullscreen && (
+        <div className="w-[35%] shrink-0 no-print border-r border-border h-full">
+          <RoadmapForm
+            mode={state.mode}
+            phaseData={state.phaseData}
+            implementationData={state.implementationData}
+            currentProjectId={currentProjectId}
+            onModeChange={(mode) => setState((prev) => ({ ...prev, mode }))}
+            onPhaseDataChange={(phaseData) => setState((prev) => ({ ...prev, phaseData }))}
+            onImplementationDataChange={(implementationData) =>
+              setState((prev) => ({ ...prev, implementationData }))
+            }
+            onReset={handleReset}
+            onExport={handleExport}
+            onExportPptx={handleExportPptx}
+            onOpenProjects={() => setShowProjects(true)}
+            onQuickSave={handleQuickSave}
+            onShowHelp={() => setShowHelp(true)}
+            hiddenModes={hiddenModes}
+            onToggleHideMode={handleToggleHideMode}
+          />
+        </div>
+      )}
 
       {/* Right Panel — Preview */}
-      <div className="flex-1 overflow-hidden bg-[#EBEBEB] flex flex-col">
+      <div className="flex-1 overflow-hidden bg-[#EBEBEB] flex flex-col relative">
+        {/* Fullscreen toggle — expand the roadmap to present to a client */}
+        <button
+          onClick={toggleFullscreen}
+          className="no-print absolute top-3 right-3 z-30 flex items-center gap-1.5 h-8 px-3 rounded-md bg-white border border-border shadow-sm text-[11px] font-medium text-foreground hover:bg-muted transition-colors"
+          title={isFullscreen ? 'Свернуть (Esc)' : 'Развернуть на весь экран'}
+        >
+          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          {isFullscreen ? 'Свернуть' : 'На весь экран'}
+        </button>
+
         <div className="flex-1 overflow-auto roadmap-slide">
           {state.mode === 'phase' ? (
-            <PhaseRoadmap data={state.phaseData} />
+            <PhaseRoadmap data={state.phaseData} fullscreen={isFullscreen} />
           ) : (
-            <ImplementationRoadmap data={state.implementationData} />
+            <ImplementationRoadmap data={state.implementationData} fullscreen={isFullscreen} />
           )}
         </div>
 
-        {/* Status Legend */}
-        <div className="shrink-0 bg-white border-t border-border px-6 py-3 flex items-center gap-6 text-[11px] font-medium no-print shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-20">
-          <span className="text-muted-foreground uppercase tracking-wider text-[10px]">Статусы:</span>
-          {[
-            { label: 'Готово', bg: 'var(--status-done-bg)', border: 'var(--status-done-border)' },
-            { label: 'В работе', bg: 'var(--status-inprogress-bg)', border: 'var(--status-inprogress-border)' },
-            { label: 'Бэклог', bg: 'var(--status-backlog-bg)', border: 'var(--status-backlog-border)' },
-            { label: 'Задержка', bg: 'var(--status-delayed-bg)', border: 'var(--status-delayed-border)' },
-          ].map(({ label, bg, border }) => (
-            <div key={label} className="flex items-center gap-2">
-              <div
-                className="w-3.5 h-3.5 rounded-[3px] border shadow-sm"
-                style={{ backgroundColor: bg, borderColor: border }}
-              />
-              <span className="text-foreground">{label}</span>
-            </div>
-          ))}
+        {/* Status & Assignee Legend */}
+        <div className="shrink-0 bg-white border-t border-border px-6 py-3 flex items-center gap-6 flex-wrap text-[11px] font-medium no-print shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-20">
+          <div className="flex items-center gap-6 flex-wrap">
+            <span className="text-muted-foreground uppercase tracking-wider text-[10px]">Статусы:</span>
+            {[
+              { label: 'Готово', bg: 'var(--status-done-bg)', border: 'var(--status-done-border)' },
+              { label: 'В работе', bg: 'var(--status-inprogress-bg)', border: 'var(--status-inprogress-border)' },
+              { label: 'Бэклог', bg: 'var(--status-backlog-bg)', border: 'var(--status-backlog-border)' },
+              { label: 'Задержка', bg: 'var(--status-delayed-bg)', border: 'var(--status-delayed-border)' },
+            ].map(({ label, bg, border }) => (
+              <div key={label} className="flex items-center gap-2">
+                <div
+                  className="w-3.5 h-3.5 rounded-[3px] border shadow-sm"
+                  style={{ backgroundColor: bg, borderColor: border }}
+                />
+                <span className="text-foreground">{label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="w-px h-4 bg-border" />
+
+          <div className="flex items-center gap-6 flex-wrap">
+            <span className="text-muted-foreground uppercase tracking-wider text-[10px]">Исполнители:</span>
+            {(Object.keys(ASSIGNEE_LABELS) as Assignee[]).map((role) => (
+              <div key={role} className="flex items-center gap-2">
+                <div
+                  className="w-5 h-3.5 rounded-[3px] shadow-sm flex items-center justify-center text-white font-bold"
+                  style={{ backgroundColor: ASSIGNEE_COLORS[role], fontSize: '8px' }}
+                >
+                  {ASSIGNEE_LABELS[role].substring(0, 2).toUpperCase()}
+                </div>
+                <span className="text-foreground">{ASSIGNEE_LABELS[role]}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

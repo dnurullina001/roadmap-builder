@@ -4,6 +4,7 @@ import { getStatusStyle, ASSIGNEE_LABELS, ASSIGNEE_COLORS } from '@/lib/status';
 
 interface ImplementationRoadmapProps {
   data: ImplementationRoadmapData;
+  fullscreen?: boolean;
 }
 
 const SWIMLANE_COLORS = ['#0048F4', '#4472C4', '#ED7D31', '#70AD47', '#FFC000', '#5B9BD5'];
@@ -26,17 +27,27 @@ function layoutTasksIntoRows(tasks: Task[]): Task[][] {
   return rows;
 }
 
-export default function ImplementationRoadmap({ data }: ImplementationRoadmapProps) {
+export default function ImplementationRoadmap({ data, fullscreen = false }: ImplementationRoadmapProps) {
   const { title, periods, milestones, swimlanes } = data;
 
   return (
-    <div className="w-full h-full overflow-hidden p-6 bg-[#EBEBEB] flex flex-col items-center">
-      <div className="bg-white shadow-lg max-w-[1200px] w-full relative flex-1 flex flex-col min-h-0">
+    <div className={`w-full h-full overflow-hidden bg-[#EBEBEB] flex flex-col items-center ${fullscreen ? 'p-10' : 'p-6'}`}>
+      <div className={`bg-white shadow-lg w-full relative flex-1 flex flex-col min-h-0 ${fullscreen ? '' : 'max-w-[1200px]'}`}>
         <div className="absolute top-3 right-3 text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-sm z-10">
           1
         </div>
 
         <div className="p-6 flex-1 overflow-auto flex flex-col">
+          {/* Fullscreen: scale content up so it reads well from across a room /
+              on a screen-share, without changing the underlying layout math. */}
+          <div
+            className="flex-1 flex flex-col min-h-0"
+            style={
+              fullscreen
+                ? { transform: 'scale(1.2)', transformOrigin: 'top left', width: '83.3%' }
+                : undefined
+            }
+          >
           {/* Title — black on white with blue underline accent */}
           <div
             className="text-black font-bold px-4 py-3 mb-0 tracking-tight border border-[#DDDDDD] border-b-2 bg-white"
@@ -208,6 +219,7 @@ export default function ImplementationRoadmap({ data }: ImplementationRoadmapPro
               })}
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
