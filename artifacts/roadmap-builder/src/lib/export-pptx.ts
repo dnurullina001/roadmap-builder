@@ -144,17 +144,17 @@ function addLegendBar(
   cx += 0.70;
 
   STATUS_LEGEND_ITEMS.forEach(({ label, bg, border }) => {
-    // «В работе» = 7 chars, «Задержка» = 8 — give enough room
-    const labelW = 0.58;
+    // Cyrillic at 6pt needs ~0.075"/char; «Задержка»=8 chars → ~0.60" + padding
+    const labelW = 0.78;
     slide.addShape('roundRect' as any, {
       x: cx, y: midY, w: badgeW, h: badgeH,
       fill: { color: bg }, line: { color: border, pt: 0.75 }, rectRadius: 0.02,
     });
     slide.addText(label, {
       x: cx + badgeW + 0.04, y: legendY, w: labelW, h: LEGEND_H,
-      fontFace: BODY_FONT, fontSize: 6.5, color: '333333', valign: 'middle',
+      fontFace: BODY_FONT, fontSize: 6, color: '333333', valign: 'middle',
     });
-    cx += badgeW + 0.04 + labelW + 0.05;
+    cx += badgeW + 0.04 + labelW + 0.04;
   });
 
   // Vertical divider
