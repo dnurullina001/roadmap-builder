@@ -118,12 +118,15 @@ export default function ImplementationRoadmap({ data, fullscreen = false, assign
                   <div key={swimlane.id} className="flex border-r border-l border-border border-b last:border-b-0 group">
                     {/* Swimlane label */}
                     <div
-                      className="w-56 px-4 py-3 flex items-center font-bold bg-white border-r border-border shrink-0"
+                      className="w-56 px-4 py-3 flex items-center font-bold bg-white border-r border-border shrink-0 overflow-hidden"
                       style={{
                         borderLeftColor: swimlaneColor,
                         borderLeftWidth: '4px',
                         fontSize: '11px',
                         fontFamily: 'Arial, sans-serif',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word',
+                        minWidth: 0,
                       }}
                     >
                       {swimlane.name}
