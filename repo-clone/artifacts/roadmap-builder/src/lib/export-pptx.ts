@@ -17,7 +17,7 @@ const TITLE_H  = 0.62;
 const ACCENT_Y = TITLE_Y + TITLE_H;
 const CONTENT_Y = ACCENT_Y + 0.15;
 
-const LEGEND_H = 0.28; // height for combined status+assignee legend at bottom
+const LEGEND_H = 0.38; // height for combined status+assignee legend at bottom
 const CONTENT_H = SLIDE_H - CONTENT_Y - MB - LEGEND_H - 0.08; // leave room for legend
 
 const TITLE_FONT = 'Times New Roman';
@@ -138,58 +138,59 @@ function addLegendBar(
   let cx = ML + 0.12;
 
   slide.addText('Статусы:', {
-    x: cx, y: legendY, w: 0.52, h: LEGEND_H,
-    fontFace: BODY_FONT, fontSize: 6, bold: true, color: '666666', valign: 'middle',
+    x: cx, y: legendY, w: 0.68, h: LEGEND_H,
+    fontFace: BODY_FONT, fontSize: 6.5, bold: true, color: '666666', valign: 'middle',
   });
-  cx += 0.54;
+  cx += 0.70;
 
   STATUS_LEGEND_ITEMS.forEach(({ label, bg, border }) => {
-    const labelW = label.length > 6 ? 0.55 : 0.45;
+    // «В работе» = 7 chars, «Задержка» = 8 — give enough room
+    const labelW = 0.58;
     slide.addShape('roundRect' as any, {
       x: cx, y: midY, w: badgeW, h: badgeH,
       fill: { color: bg }, line: { color: border, pt: 0.75 }, rectRadius: 0.02,
     });
     slide.addText(label, {
-      x: cx + badgeW + 0.03, y: legendY, w: labelW, h: LEGEND_H,
-      fontFace: BODY_FONT, fontSize: 6, color: '333333', valign: 'middle',
+      x: cx + badgeW + 0.04, y: legendY, w: labelW, h: LEGEND_H,
+      fontFace: BODY_FONT, fontSize: 6.5, color: '333333', valign: 'middle',
     });
-    cx += badgeW + 0.03 + labelW + 0.06;
+    cx += badgeW + 0.04 + labelW + 0.05;
   });
 
   // Vertical divider
   slide.addShape('line' as any, {
-    x: cx + 0.04, y: legendY + 0.04, w: 0, h: LEGEND_H - 0.08,
+    x: cx + 0.05, y: legendY + 0.05, w: 0, h: LEGEND_H - 0.10,
     line: { color: 'CCCCCC', pt: 0.5 },
   });
-  cx += 0.18;
+  cx += 0.20;
 
   // ── Right: Assignees ──────────────────────────────────────────────────────
   slide.addText('Исполнители:', {
-    x: cx, y: legendY, w: 0.72, h: LEGEND_H,
-    fontFace: BODY_FONT, fontSize: 6, bold: true, color: '666666', valign: 'middle',
+    x: cx, y: legendY, w: 0.88, h: LEGEND_H,
+    fontFace: BODY_FONT, fontSize: 6.5, bold: true, color: '666666', valign: 'middle',
   });
-  cx += 0.74;
+  cx += 0.90;
 
   roles.forEach((role) => {
     const colorHex = role.color.replace('#', '');
-    const abbr     = role.label.substring(0, 2).toUpperCase();
-    const labelW   = 0.72;
-    if (cx + badgeW + 0.03 + labelW + 0.06 > ML + CW - 0.1) return;
+    const letter   = role.label.substring(0, 1).toUpperCase(); // 1 letter only
+    const labelW   = 0.78;
+    if (cx + badgeW + 0.03 + labelW + 0.05 > ML + CW - 0.08) return;
 
     slide.addShape('roundRect' as any, {
       x: cx, y: midY, w: badgeW, h: badgeH,
       fill: { color: colorHex }, line: { color: colorHex, pt: 0 }, rectRadius: 0.02,
     });
-    slide.addText(abbr, {
+    slide.addText(letter, {
       x: cx, y: midY, w: badgeW, h: badgeH,
-      fontFace: BODY_FONT, fontSize: 5, bold: true,
+      fontFace: BODY_FONT, fontSize: 6, bold: true,
       color: 'FFFFFF', align: 'center', valign: 'middle',
     });
     slide.addText(role.label, {
       x: cx + badgeW + 0.04, y: legendY, w: labelW, h: LEGEND_H,
-      fontFace: BODY_FONT, fontSize: 6, color: '333333', valign: 'middle',
+      fontFace: BODY_FONT, fontSize: 6.5, color: '333333', valign: 'middle',
     });
-    cx += badgeW + 0.04 + labelW + 0.06;
+    cx += badgeW + 0.04 + labelW + 0.05;
   });
 }
 

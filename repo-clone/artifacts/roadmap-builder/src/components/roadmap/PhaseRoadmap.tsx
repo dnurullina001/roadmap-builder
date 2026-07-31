@@ -83,14 +83,14 @@ export default function PhaseRoadmap({ data, fullscreen = false, assigneeRoles }
                 return (
                   <tr key={phase.id}>
                     <td
-                      className="border border-border px-3 py-2 bg-card align-top"
-                      style={{ borderLeftColor: phaseColor, borderLeftWidth: '3px' }}
+                      className="border border-border px-3 py-2 bg-card align-top w-56"
+                      style={{ borderLeftColor: phaseColor, borderLeftWidth: '3px', maxWidth: '14rem', wordBreak: 'break-word', overflowWrap: 'break-word' }}
                     >
-                      <div className="flex items-start gap-2">
+                      <div className="flex items-start gap-2 min-w-0">
                         <span className="font-mono text-muted-foreground shrink-0" style={{ fontSize: '11px' }}>
                           {phase.number}
                         </span>
-                        <span className="text-foreground leading-tight font-bold" style={{ fontSize: '11px', fontFamily: 'Arial, sans-serif' }}>
+                        <span className="text-foreground leading-tight font-bold break-words min-w-0" style={{ fontSize: '11px', fontFamily: 'Arial, sans-serif', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                           {phase.name}
                         </span>
                       </div>
