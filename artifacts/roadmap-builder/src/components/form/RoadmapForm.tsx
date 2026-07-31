@@ -691,11 +691,12 @@ export default function RoadmapForm({
                                   {phase.subItems.map((item) => (
                                     <div key={item.id} className="bg-white border border-border/60 rounded-[4px] p-2 space-y-2 shadow-sm">
                                       <div className="flex gap-1.5 items-start">
-                                        <Input
+                                        <textarea
                                           placeholder="Описание задачи"
                                           value={item.description}
                                           onChange={(e) => updateSubItem(phase.id, item.id, { description: e.target.value })}
-                                          className="h-6 text-[11px] font-medium flex-1"
+                                          rows={2}
+                                          className="text-[11px] font-medium flex-1 min-h-[36px] resize-none rounded-md border border-input bg-background px-2 py-1 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                         />
                                         <button onClick={() => removeSubItem(phase.id, item.id)} className="p-1 text-muted-foreground hover:text-destructive h-6 shrink-0">
                                           <Trash2 className="w-3 h-3" />
@@ -847,11 +848,12 @@ export default function RoadmapForm({
                                   {swimlane.tasks.map((task) => (
                                     <div key={task.id} className="bg-white border border-border/60 rounded-[4px] p-2 space-y-2 shadow-sm">
                                       <div className="flex gap-1.5 items-start">
-                                        <Input
+                                        <textarea
                                           placeholder="Описание задачи"
                                           value={task.description}
                                           onChange={(e) => updateTask(swimlane.id, task.id, { description: e.target.value })}
-                                          className="h-6 text-[11px] font-medium flex-1"
+                                          rows={2}
+                                          className="text-[11px] font-medium flex-1 min-h-[36px] resize-none rounded-md border border-input bg-background px-2 py-1 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                         />
                                         <button onClick={() => removeTask(swimlane.id, task.id)} className="p-1 text-muted-foreground hover:text-destructive h-6 shrink-0">
                                           <Trash2 className="w-3 h-3" />

@@ -8,7 +8,7 @@ interface ImplementationRoadmapProps {
   assigneeRoles?: AssigneeRole[];
 }
 
-const SWIMLANE_COLORS = ['#0048F4', '#4472C4', '#ED7D31', '#70AD47', '#FFC000', '#5B9BD5'];
+const SWIMLANE_COLORS = ['#0048F4', '#1565C0', '#0D47A1', '#1976D2', '#1E88E5', '#0288D1'];
 
 function layoutTasksIntoRows(tasks: Task[]): Task[][] {
   const sorted = [...tasks].sort((a, b) => a.startPeriod - b.startPeriod);
@@ -174,8 +174,7 @@ export default function ImplementationRoadmap({ data, fullscreen = false, assign
                                   >
                                     <div
                                       className="font-bold leading-tight flex items-center gap-1 break-words"
-                                      style={{ wordBreak: 'break-word' }}
-                                      style={{ fontSize: '8px', fontFamily: 'Arial, sans-serif' }}
+                                      style={{ wordBreak: 'break-word', fontSize: '8px', fontFamily: 'Arial, sans-serif' }}
                                     >
                                       {task.description}
                                       {isDelayed && <span className="text-[#C62828] shrink-0">⚠</span>}
