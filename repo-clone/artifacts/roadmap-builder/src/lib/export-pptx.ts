@@ -52,7 +52,8 @@ function textBlockHeightIn(text: string, fontSizePt: number, boxWidthIn: number)
 }
 
 // ── Assignee colored badge chips inside a cell ────────────────────────────────
-// Draws small colored rectangles with 1 letter each, horizontally at cell bottom.
+// Draws small colored rectangles with 1 letter each.
+// Wraps to a second row automatically if assignees don't fit in one line.
 function addAssigneeBadgesInCell(
   slide: pptxgen.Slide,
   assignees: string[],
@@ -60,26 +61,36 @@ function addAssigneeBadgesInCell(
   cellX: number, cellY: number, cellH: number, cellW: number,
 ) {
   if (!assignees || assignees.length === 0) return;
-  const badgeW = 0.115;
-  const badgeH = 0.10;
-  const gap    = 0.018;
-  const by     = cellY + cellH - badgeH - 0.02;
-  if (by <= cellY) return;
-  let bx = cellX + 0.03;
-  for (const a of assignees) {
-    if (bx + badgeW > cellX + cellW - 0.02) break;
-    const color  = hex(getAssigneeColor(a, roles));
-    const letter = getAssigneeLabel(a, roles).substring(0, 1).toUpperCase();
-    slide.addShape('roundRect' as any, {
-      x: bx, y: by, w: badgeW, h: badgeH,
-      fill: { color }, line: { color, pt: 0 }, rectRadius: 0.02,
-    });
-    slide.addText(letter, {
-      x: bx, y: by, w: badgeW, h: badgeH,
-      fontFace: BODY_FONT, fontSize: 5, bold: true,
-      color: 'FFFFFF', align: 'center', valign: 'middle',
-    });
-    bx += badgeW + gap;
+  const badgeW  = 0.112;
+  const badgeH  = 0.096;
+  const gap     = 0.016;
+  const padL    = 0.03;
+  const padB    = 0.02;
+  const maxX    = cellX + cellW - 0.02;
+  const perRow  = Math.max(1, Math.floor((maxX - cellX - padL) / (badgeW + gap)));
+  const rows    = Math.ceil(assignees.length / perRow);
+  const totalH  = rows * (badgeH + 0.008) - 0.008;
+  let rowStart  = cellY + cellH - totalH - padB;
+  if (rowStart < cellY + 0.02) rowStart = cellY + 0.02;
+
+  for (let r = 0; r < rows; r++) {
+    const rowAssignees = assignees.slice(r * perRow, (r + 1) * perRow);
+    let bx = cellX + padL;
+    const by = rowStart + r * (badgeH + 0.008);
+    for (const a of rowAssignees) {
+      const color  = hex(getAssigneeColor(a, roles));
+      const letter = getAssigneeLabel(a, roles).substring(0, 1).toUpperCase();
+      slide.addShape('roundRect' as any, {
+        x: bx, y: by, w: badgeW, h: badgeH,
+        fill: { color }, line: { color, pt: 0 }, rectRadius: 0.02,
+      });
+      slide.addText(letter, {
+        x: bx, y: by, w: badgeW, h: badgeH,
+        fontFace: BODY_FONT, fontSize: 5, bold: true,
+        color: 'FFFFFF', align: 'center', valign: 'middle',
+      });
+      bx += badgeW + gap;
+    }
   }
 }
 
@@ -165,6 +176,14 @@ function addLegendBar(
   cx += 0.20;
 
   // ── Right: Assignees ──────────────────────────────────────────────────────
+  // Adaptive: if roles fit with full names use labels; otherwise compact badge-only mode.
+  const availForRoles = ML + CW - 0.08 - cx - 0.92; // remaining after header
+  const fullItemW   = badgeW + 0.04 + 0.78 + 0.05;  // badge + label
+  const compactItemW = badgeW + 0.05;                 // badge only
+
+  const useCompact = roles.length * fullItemW > availForRoles;
+  const itemW = useCompact ? compactItemW : fullItemW;
+
   slide.addText('Исполнители:', {
     x: cx, y: legendY, w: 0.88, h: LEGEND_H,
     fontFace: BODY_FONT, fontSize: 6.5, bold: true, color: '666666', valign: 'middle',
@@ -172,10 +191,10 @@ function addLegendBar(
   cx += 0.90;
 
   roles.forEach((role) => {
+    if (cx + itemW > ML + CW - 0.04) return; // hard overflow guard
+
     const colorHex = role.color.replace('#', '');
-    const letter   = role.label.substring(0, 1).toUpperCase(); // 1 letter only
-    const labelW   = 0.78;
-    if (cx + badgeW + 0.03 + labelW + 0.05 > ML + CW - 0.08) return;
+    const letter   = role.label.substring(0, 1).toUpperCase();
 
     slide.addShape('roundRect' as any, {
       x: cx, y: midY, w: badgeW, h: badgeH,
@@ -186,11 +205,14 @@ function addLegendBar(
       fontFace: BODY_FONT, fontSize: 6, bold: true,
       color: 'FFFFFF', align: 'center', valign: 'middle',
     });
-    slide.addText(role.label, {
-      x: cx + badgeW + 0.04, y: legendY, w: labelW, h: LEGEND_H,
-      fontFace: BODY_FONT, fontSize: 6.5, color: '333333', valign: 'middle',
-    });
-    cx += badgeW + 0.04 + labelW + 0.05;
+
+    if (!useCompact) {
+      slide.addText(role.label, {
+        x: cx + badgeW + 0.04, y: legendY, w: 0.78, h: LEGEND_H,
+        fontFace: BODY_FONT, fontSize: 6.5, color: '333333', valign: 'middle',
+      });
+    }
+    cx += itemW;
   });
 }
 
