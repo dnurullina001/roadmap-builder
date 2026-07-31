@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Plus, Trash2, ChevronDown, RotateCcw, Download, Presentation, FolderOpen, Save, HelpCircle, Eye, EyeOff, X, Pencil, Check, Mail } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, RotateCcw, Download, Presentation, FolderOpen, Save, HelpCircle, Eye, EyeOff, X, Pencil, Check } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
@@ -444,13 +444,6 @@ export default function RoadmapForm({
             >
               <Save className="w-3 h-3" />
             </Button>
-            <a
-              href="mailto:changeteam@tedo.ru?subject=%D0%92%D0%B5%D0%BA%D1%82%D0%BE%D1%80%20%E2%80%94%20%D0%B2%D0%BE%D0%BF%D1%80%D0%BE%D1%81%2F%D0%BE%D1%88%D0%B8%D0%B1%D0%BA%D0%B0"
-              className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-[#0048F4] hover:bg-accent transition-colors"
-              title="Написать нам: changeteam@tedo.ru"
-            >
-              <Mail className="w-4 h-4" />
-            </a>
             <Button
               variant="ghost"
               size="sm"
@@ -698,11 +691,12 @@ export default function RoadmapForm({
                                   {phase.subItems.map((item) => (
                                     <div key={item.id} className="bg-white border border-border/60 rounded-[4px] p-2 space-y-2 shadow-sm">
                                       <div className="flex gap-1.5 items-start">
-                                        <Input
+                                        <textarea
                                           placeholder="Описание задачи"
                                           value={item.description}
                                           onChange={(e) => updateSubItem(phase.id, item.id, { description: e.target.value })}
-                                          className="h-6 text-[11px] font-medium flex-1"
+                                          rows={2}
+                                          className="text-[11px] font-medium flex-1 min-h-[36px] resize-none rounded-md border border-input bg-background px-2 py-1 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                         />
                                         <button onClick={() => removeSubItem(phase.id, item.id)} className="p-1 text-muted-foreground hover:text-destructive h-6 shrink-0">
                                           <Trash2 className="w-3 h-3" />
@@ -854,11 +848,12 @@ export default function RoadmapForm({
                                   {swimlane.tasks.map((task) => (
                                     <div key={task.id} className="bg-white border border-border/60 rounded-[4px] p-2 space-y-2 shadow-sm">
                                       <div className="flex gap-1.5 items-start">
-                                        <Input
+                                        <textarea
                                           placeholder="Описание задачи"
                                           value={task.description}
                                           onChange={(e) => updateTask(swimlane.id, task.id, { description: e.target.value })}
-                                          className="h-6 text-[11px] font-medium flex-1"
+                                          rows={2}
+                                          className="text-[11px] font-medium flex-1 min-h-[36px] resize-none rounded-md border border-input bg-background px-2 py-1 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                         />
                                         <button onClick={() => removeTask(swimlane.id, task.id)} className="p-1 text-muted-foreground hover:text-destructive h-6 shrink-0">
                                           <Trash2 className="w-3 h-3" />

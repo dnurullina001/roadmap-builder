@@ -17,7 +17,7 @@ const TITLE_H  = 0.62;
 const ACCENT_Y = TITLE_Y + TITLE_H;
 const CONTENT_Y = ACCENT_Y + 0.15;
 
-const LEGEND_H = 0.22; // height reserved for assignee legend at bottom
+const LEGEND_H = 0.28; // height for combined status+assignee legend at bottom
 const CONTENT_H = SLIDE_H - CONTENT_Y - MB - LEGEND_H - 0.08; // leave room for legend
 
 const TITLE_FONT = 'Times New Roman';
@@ -30,7 +30,8 @@ const CELL_TEXT_SIZE = 8;
 
 const CORP_NAVY = '44546A';
 const CORP_BLUE = '0048F4';
-const PHASE_COLORS = ['0048F4', '4472C4', 'ED7D31', '70AD47', 'FFC000', '5B9BD5'];
+// Only blue shades for swimlanes / phases
+const PHASE_COLORS = ['0048F4', '1565C0', '0D47A1', '1976D2', '1E88E5', '0288D1'];
 
 // Minimum readable row height — never place shapes below this height
 const MIN_ROW_H = 0.18; // inches
@@ -50,14 +51,36 @@ function textBlockHeightIn(text: string, fontSizePt: number, boxWidthIn: number)
   return lines * lineHeightIn;
 }
 
-// ── Assignee inline text (compact, no badge shapes) ──────────────────────────
-// Renders assignees as a single short colored-text line at the bottom of a cell.
-// Uses 2-letter abbreviations separated by spaces so it fits on one line easily.
-function assigneeInlineText(assignees: string[], roles?: AssigneeRole[]): string {
-  if (!assignees || assignees.length === 0) return '';
-  return assignees
-    .map(a => getAssigneeLabel(a, roles).substring(0, 2).toUpperCase())
-    .join(' · ');
+// ── Assignee colored badge chips inside a cell ────────────────────────────────
+// Draws small colored rectangles with 1 letter each, horizontally at cell bottom.
+function addAssigneeBadgesInCell(
+  slide: pptxgen.Slide,
+  assignees: string[],
+  roles: AssigneeRole[] | undefined,
+  cellX: number, cellY: number, cellH: number, cellW: number,
+) {
+  if (!assignees || assignees.length === 0) return;
+  const badgeW = 0.115;
+  const badgeH = 0.10;
+  const gap    = 0.018;
+  const by     = cellY + cellH - badgeH - 0.02;
+  if (by <= cellY) return;
+  let bx = cellX + 0.03;
+  for (const a of assignees) {
+    if (bx + badgeW > cellX + cellW - 0.02) break;
+    const color  = hex(getAssigneeColor(a, roles));
+    const letter = getAssigneeLabel(a, roles).substring(0, 1).toUpperCase();
+    slide.addShape('roundRect' as any, {
+      x: bx, y: by, w: badgeW, h: badgeH,
+      fill: { color }, line: { color, pt: 0 }, rectRadius: 0.02,
+    });
+    slide.addText(letter, {
+      x: bx, y: by, w: badgeW, h: badgeH,
+      fontFace: BODY_FONT, fontSize: 5, bold: true,
+      color: 'FFFFFF', align: 'center', valign: 'middle',
+    });
+    bx += badgeW + gap;
+  }
 }
 
 function setupLayout(prs: pptxgen) {
@@ -79,20 +102,27 @@ function addTitleBar(slide: pptxgen.Slide, title: string) {
   });
 }
 
-// Assignee legend row below the grid
-function addAssigneeLegend(
+// ── Combined legend bar: statuses (left) + assignees (right) ─────────────────
+const STATUS_LEGEND_ITEMS = [
+  { label: 'Готово',   bg: 'D6EADD', border: '70AD47' },
+  { label: 'В работе', bg: 'E3ECFB', border: '4472C4' },
+  { label: 'Бэклог',   bg: 'F0F0F0', border: 'A5A5A5' },
+  { label: 'Задержка', bg: 'FDECEA', border: 'C62828' },
+];
+
+const DEFAULT_ROLES_LEGEND = [
+  { id: 'pm',        label: 'ПМ',          color: '#0048F4' },
+  { id: 'analyst',   label: 'Аналитик',    color: '#4472C4' },
+  { id: 'developer', label: 'Разработчик', color: '#1565C0' },
+  { id: 'tester',    label: 'Тестировщик', color: '#1976D2' },
+];
+
+function addLegendBar(
   slide: pptxgen.Slide,
   assigneeRoles: AssigneeRole[] | undefined,
   legendY: number,
 ) {
-  const roles = assigneeRoles && assigneeRoles.length > 0
-    ? assigneeRoles
-    : [
-        { id: 'pm',        label: 'ПМ',          color: '#0048F4' },
-        { id: 'analyst',   label: 'Аналитик',    color: '#4472C4' },
-        { id: 'developer', label: 'Разработчик', color: '#ED7D31' },
-        { id: 'tester',    label: 'Тестировщик', color: '#70AD47' },
-      ];
+  const roles = assigneeRoles && assigneeRoles.length > 0 ? assigneeRoles : DEFAULT_ROLES_LEGEND;
 
   // Background strip
   slide.addShape('rect' as any, {
@@ -100,39 +130,66 @@ function addAssigneeLegend(
     fill: { color: 'F8F8F8' }, line: { color: 'DDDDDD', pt: 0.5 },
   });
 
-  const badgeW = 0.14;
-  const badgeH = 0.13;
-  const gapBetween = 0.12;
-  const textW = 0.85;
-  const itemW = badgeW + gapBetween + textW + 0.18;
+  const badgeW = 0.13;
+  const badgeH = 0.12;
+  const midY   = legendY + (LEGEND_H - badgeH) / 2;
 
-  let curX = ML + 0.2;
-  const midY = legendY + (LEGEND_H - badgeH) / 2;
+  // ── Left: Statuses ────────────────────────────────────────────────────────
+  let cx = ML + 0.12;
+
+  slide.addText('Статусы:', {
+    x: cx, y: legendY, w: 0.52, h: LEGEND_H,
+    fontFace: BODY_FONT, fontSize: 6, bold: true, color: '666666', valign: 'middle',
+  });
+  cx += 0.54;
+
+  STATUS_LEGEND_ITEMS.forEach(({ label, bg, border }) => {
+    const labelW = label.length > 6 ? 0.55 : 0.45;
+    slide.addShape('roundRect' as any, {
+      x: cx, y: midY, w: badgeW, h: badgeH,
+      fill: { color: bg }, line: { color: border, pt: 0.75 }, rectRadius: 0.02,
+    });
+    slide.addText(label, {
+      x: cx + badgeW + 0.03, y: legendY, w: labelW, h: LEGEND_H,
+      fontFace: BODY_FONT, fontSize: 6, color: '333333', valign: 'middle',
+    });
+    cx += badgeW + 0.03 + labelW + 0.06;
+  });
+
+  // Vertical divider
+  slide.addShape('line' as any, {
+    x: cx + 0.04, y: legendY + 0.04, w: 0, h: LEGEND_H - 0.08,
+    line: { color: 'CCCCCC', pt: 0.5 },
+  });
+  cx += 0.18;
+
+  // ── Right: Assignees ──────────────────────────────────────────────────────
+  slide.addText('Исполнители:', {
+    x: cx, y: legendY, w: 0.72, h: LEGEND_H,
+    fontFace: BODY_FONT, fontSize: 6, bold: true, color: '666666', valign: 'middle',
+  });
+  cx += 0.74;
 
   roles.forEach((role) => {
-    if (curX + itemW > ML + CW - 0.1) return; // don't overflow slide
-
     const colorHex = role.color.replace('#', '');
-    // Colored badge chip
+    const abbr     = role.label.substring(0, 2).toUpperCase();
+    const labelW   = 0.72;
+    if (cx + badgeW + 0.03 + labelW + 0.06 > ML + CW - 0.1) return;
+
     slide.addShape('roundRect' as any, {
-      x: curX, y: midY, w: badgeW, h: badgeH,
-      fill: { color: colorHex }, line: { color: colorHex, pt: 0 },
-      rectRadius: 0.02,
+      x: cx, y: midY, w: badgeW, h: badgeH,
+      fill: { color: colorHex }, line: { color: colorHex, pt: 0 }, rectRadius: 0.02,
     });
-    // 2-letter abbreviation inside chip
-    slide.addText(role.label.substring(0, 2).toUpperCase(), {
-      x: curX, y: midY, w: badgeW, h: badgeH,
+    slide.addText(abbr, {
+      x: cx, y: midY, w: badgeW, h: badgeH,
       fontFace: BODY_FONT, fontSize: 5, bold: true,
       color: 'FFFFFF', align: 'center', valign: 'middle',
     });
-    // Full label next to chip
     slide.addText(role.label, {
-      x: curX + badgeW + 0.05, y: legendY, w: textW, h: LEGEND_H,
-      fontFace: BODY_FONT, fontSize: BODY_SIZE - 2,
-      color: '333333', valign: 'middle',
+      x: cx + badgeW + 0.04, y: legendY, w: labelW, h: LEGEND_H,
+      fontFace: BODY_FONT, fontSize: 6, color: '333333', valign: 'middle',
     });
-
-    curX += itemW;
+    cx += badgeW + 0.04 + labelW + 0.06;
   });
 }
 
@@ -217,8 +274,8 @@ export function exportPhaseRoadmapToPptx(
         : data.title,
     );
 
-    // ── Assignee legend ──────────────────────────────────────────────────────
-    addAssigneeLegend(slide, assigneeRoles, LEGEND_Y);
+    // ── Status + Assignee legend ─────────────────────────────────────────────
+    addLegendBar(slide, assigneeRoles, LEGEND_Y);
 
     // ── Row height: auto-fit to available area ────────────────────────────────
     const totalItemRows = slidePhases.reduce(
@@ -326,7 +383,9 @@ export function exportPhaseRoadmapToPptx(
           const rowH = Math.min(naturalRowH, BOTTOM_LIMIT - itemY);
           const statusStyle = getStatusStyle(item.status);
           const assignees = item.assignees || [];
-          const assigneeText = assigneeInlineText(assignees, assigneeRoles);
+          const hasAssignees = assignees.length > 0;
+          // badge strip height: 0.10 badge + 0.02 bottom margin
+          const badgeStripH = hasAssignees ? 0.13 : 0;
 
           data.periods.forEach((_, periodIdx) => {
             const x = ML + COL_LABEL_W + periodIdx * periodW;
@@ -342,36 +401,18 @@ export function exportPhaseRoadmapToPptx(
             if (isStart) {
               const spanW = periodW * Math.max(item.endPeriod - item.startPeriod, 1);
               const innerW = spanW - 0.08;
+              const descAvailH = Math.max(rowH - badgeStripH - 0.04, 0.10);
 
-              if (assigneeText) {
-                // Description text (slightly reduced height to leave room for assignee line)
-                const assigneeLineH = (6 / 72) * 1.5 + 0.02;
-                const descAvailH = Math.max(rowH - assigneeLineH - 0.06, 0.10);
+              slide.addText(item.description, {
+                x: x + 0.04, y: itemY + 0.02,
+                w: innerW, h: descAvailH,
+                fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
+                color: hex(statusStyle.fg),
+                wrap: true, valign: hasAssignees ? 'top' : 'middle',
+              });
 
-                slide.addText(item.description, {
-                  x: x + 0.04, y: itemY + 0.02,
-                  w: innerW, h: descAvailH,
-                  fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
-                  color: hex(statusStyle.fg),
-                  wrap: true, valign: 'top',
-                });
-
-                // Assignee line — colored abbreviations in small text
-                slide.addText(assigneeText, {
-                  x: x + 0.04, y: itemY + rowH - assigneeLineH - 0.02,
-                  w: innerW, h: assigneeLineH + 0.02,
-                  fontFace: BODY_FONT, fontSize: 6,
-                  color: hex(statusStyle.fg), bold: true,
-                  wrap: false, valign: 'bottom',
-                });
-              } else {
-                slide.addText(item.description, {
-                  x: x + 0.04, y: itemY + 0.02,
-                  w: innerW, h: Math.max(rowH - 0.04, 0.12),
-                  fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
-                  color: hex(statusStyle.fg),
-                  wrap: true, valign: 'middle',
-                });
+              if (hasAssignees) {
+                addAssigneeBadgesInCell(slide, assignees, assigneeRoles, x + 0.02, itemY, rowH, innerW + 0.04);
               }
             }
           });
@@ -450,8 +491,8 @@ export function exportImplementationRoadmapToPptx(
         : data.title,
     );
 
-    // ── Assignee legend ──────────────────────────────────────────────────────
-    addAssigneeLegend(slide, assigneeRoles, LEGEND_Y);
+    // ── Status + Assignee legend ─────────────────────────────────────────────
+    addLegendBar(slide, assigneeRoles, LEGEND_Y);
 
     // ── Auto-fit lane heights ─────────────────────────────────────────────────
     const maxRows = Math.max(
@@ -600,7 +641,8 @@ export function exportImplementationRoadmapToPptx(
           const w = Math.max(task.span * periodW - 0.04, 0.1);
           const innerW = w - 0.08;
           const assignees = task.assignees || [];
-          const assigneeText = assigneeInlineText(assignees, assigneeRoles);
+          const hasAssignees = assignees.length > 0;
+          const badgeStripH = hasAssignees ? 0.13 : 0;
 
           slide.addShape('rect' as any, {
             x, y: taskY, w, h: taskH,
@@ -609,30 +651,16 @@ export function exportImplementationRoadmapToPptx(
             rectRadius: 0.03,
           });
 
-          if (assigneeText) {
-            const assigneeLineH = (6 / 72) * 1.5 + 0.02;
-            const descAvailH = Math.max(taskH - assigneeLineH - 0.04, 0.10);
+          const descAvailH = Math.max(taskH - badgeStripH - 0.03, 0.10);
+          slide.addText(task.description, {
+            x: x + 0.04, y: taskY + 0.01, w: innerW, h: descAvailH,
+            fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
+            color: hex(statusStyle.fg),
+            wrap: true, valign: hasAssignees ? 'top' : 'middle',
+          });
 
-            slide.addText(task.description, {
-              x: x + 0.04, y: taskY + 0.01, w: innerW, h: descAvailH,
-              fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
-              color: hex(statusStyle.fg),
-              wrap: true, valign: 'top',
-            });
-            slide.addText(assigneeText, {
-              x: x + 0.04, y: taskY + taskH - assigneeLineH - 0.01,
-              w: innerW, h: assigneeLineH + 0.01,
-              fontFace: BODY_FONT, fontSize: 6, bold: true,
-              color: hex(statusStyle.fg),
-              wrap: false, valign: 'bottom',
-            });
-          } else {
-            slide.addText(task.description, {
-              x: x + 0.04, y: taskY + 0.01, w: innerW, h: Math.max(taskH - 0.02, 0.12),
-              fontFace: BODY_FONT, fontSize: CELL_TEXT_SIZE,
-              color: hex(statusStyle.fg),
-              wrap: true, valign: 'middle',
-            });
+          if (hasAssignees) {
+            addAssigneeBadgesInCell(slide, assignees, assigneeRoles, x + 0.02, taskY, taskH, innerW + 0.04);
           }
         });
 

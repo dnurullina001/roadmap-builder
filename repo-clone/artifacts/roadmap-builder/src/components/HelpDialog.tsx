@@ -88,9 +88,23 @@ export default function HelpDialog({ open, onClose }: HelpDialogProps) {
           </div>
 
           {/* Footer tip */}
-          <div className="mx-6 mb-5 mt-1 bg-[#0048F4]/5 border border-[#0048F4]/20 rounded-md px-4 py-3">
+          <div className="mx-6 mt-1 bg-[#0048F4]/5 border border-[#0048F4]/20 rounded-md px-4 py-3">
             <p className="text-[11px] text-[#0048F4] font-medium">
               💡 Данные сохраняются автоматически в браузере. Используйте проекты для хранения нескольких роадмап.
+            </p>
+          </div>
+
+          {/* Support email */}
+          <div className="mx-6 mb-5 mt-2 bg-muted/40 border border-border rounded-md px-4 py-3">
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              ✉️ Есть вопросы или нашли баг? Напишите на{' '}
+              <a
+                href="mailto:changeteam@tedo.ru?subject=Вектор"
+                className="text-[#0048F4] font-medium hover:underline"
+              >
+                changeteam@tedo.ru
+              </a>{' '}
+              с темой <span className="font-medium">«Вектор»</span>.
             </p>
           </div>
         </ScrollArea>

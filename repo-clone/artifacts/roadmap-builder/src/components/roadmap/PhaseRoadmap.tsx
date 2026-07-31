@@ -8,7 +8,7 @@ interface PhaseRoadmapProps {
   assigneeRoles?: AssigneeRole[];
 }
 
-const PHASE_COLORS = ['#0048F4', '#4472C4', '#ED7D31', '#70AD47', '#FFC000', '#5B9BD5'];
+const PHASE_COLORS = ['#0048F4', '#1565C0', '#0D47A1', '#1976D2', '#1E88E5', '#0288D1'];
 
 export default function PhaseRoadmap({ data, fullscreen = false, assigneeRoles }: PhaseRoadmapProps) {
   const { title, periods, currentPosition, phases, milestones } = data;
